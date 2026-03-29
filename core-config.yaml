@@ -1,0 +1,40 @@
+# AIOX Core Configuration
+# Gerado pelo workshop: AIOX Produto Digital
+
+project:
+  name: "CRM Produto Digital"
+  description: "Sistema completo de CRM para infoproduto"
+  version: "1.0.0"
+
+boundary:
+  frameworkProtection: false  # false para alunos (podem modificar tudo)
+
+agents:
+  enabled:
+    - pm
+    - po
+    - sm
+    - architect
+    - dev
+    - qa
+    - data-engineer
+    - ux-design-expert
+    - devops
+    - analyst
+
+workflows:
+  default: "story-development-cycle"
+  qaLoop:
+    maxIterations: 5
+
+conventions:
+  commits: "conventional"
+  branches:
+    feature: "feat/*"
+    fix: "fix/*"
+    docs: "docs/*"
+  imports: "absolute"
+  naming:
+    components: "PascalCase"
+    files: "kebab-case"
+    constants: "SCREAMING_SNAKE_CASE"

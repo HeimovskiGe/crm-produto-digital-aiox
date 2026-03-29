@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Produto Digital</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1>CRM Produto Digital</h1>
+            <p>Construido com AIOX + Claude Code</p>
+        </header>
+
+        <nav class="nav">
+            <button class="nav-btn active" onclick="showTab('dashboard')">Dashboard</button>
+            <button class="nav-btn" onclick="showTab('students')">Alunas</button>
+            <button class="nav-btn" onclick="showTab('leads')">Leads</button>
+            <button class="nav-btn" onclick="showTab('whatsapp')">WhatsApp</button>
+        </nav>
+
+        <main class="main">
+            <!-- Dashboard -->
+            <section id="tab-dashboard" class="tab-content active">
+                <h2>Dashboard</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-value" id="total-students">0</span>
+                        <span class="stat-label">Alunas</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="total-leads">0</span>
+                        <span class="stat-label">Leads</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="total-orders">0</span>
+                        <span class="stat-label">Vendas</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="conversion-rate">0%</span>
+                        <span class="stat-label">Conversao</span>
+                    </div>
+                </div>
+                <p style="color:#888;margin-top:2rem">
+                    Este e o template base. Use AIOX para construir o restante!
+                </p>
+            </section>
+
+            <!-- Alunas -->
+            <section id="tab-students" class="tab-content">
+                <h2>Kanban de Alunas</h2>
+                <p>Implemente com: <code>@sm *create-story "Kanban de alunas"</code></p>
+            </section>
+
+            <!-- Leads -->
+            <section id="tab-leads" class="tab-content">
+                <h2>Recovery de Leads</h2>
+                <p>Implemente com: <code>@sm *create-story "Sistema de recovery de leads"</code></p>
+            </section>
+
+            <!-- WhatsApp -->
+            <section id="tab-whatsapp" class="tab-content">
+                <h2>WhatsApp</h2>
+                <p>Implemente com: <code>@sm *create-story "Integracao WhatsApp Evolution API"</code></p>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
