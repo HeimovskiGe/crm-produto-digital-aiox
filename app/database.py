@@ -1,15 +1,28 @@
 """Database configuration - SQLAlchemy Async."""
+import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from app.config import settings
 
 # Engine
+# NullPool + statement_cache_size=0 + prepared_statement_name_func: obrigatorio
+# quando o DATABASE_URL aponta para o pooler de transacao do Supabase/pgbouncer
+# (porta 6543), usado em producao (Vercel serverless). statement_cache_size=0
+# sozinho NAO basta: o asyncpg ainda nomeia prepared statements de forma
+# sequencial ("__asyncpg_stmt_1__"), e isso colide quando o pgbouncer entrega a
+# mesma conexao fisica pra sessoes diferentes. Nome unico (uuid) elimina a
+# colisao. Inofensivo contra conexao direta/session pooler (usada em dev local).
 async_engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
-    pool_size=5,
-    max_overflow=10,
+    poolclass=NullPool,
+    connect_args={
+        "statement_cache_size": 0,
+        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
+    },
 )
 
 # Session factory

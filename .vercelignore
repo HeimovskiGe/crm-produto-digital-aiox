@@ -1,0 +1,12 @@
+.aiox-core
+.claude
+.codex
+.cursor
+.gemini
+.antigravity
+.github
+docs
+venv
+alembic
+tests
+*.md

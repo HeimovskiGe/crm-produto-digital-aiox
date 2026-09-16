@@ -5,6 +5,7 @@ Construido com FastAPI + SQLAlchemy Async + AIOX.
 """
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -45,11 +46,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+BASE_DIR = Path(__file__).resolve().parent
+
 # Static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 # Templates
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 # Register routers
 app.include_router(health.router)
@@ -67,4 +70,4 @@ app.include_router(health.router)
 async def root():
     """Dashboard page."""
     from fastapi.responses import HTMLResponse
-    return HTMLResponse(open("app/templates/index.html").read())
+    return HTMLResponse((BASE_DIR / "templates" / "index.html").read_text())
