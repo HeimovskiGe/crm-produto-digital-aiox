@@ -15,9 +15,7 @@
 
         <nav class="nav">
             <button class="nav-btn active" onclick="showTab('dashboard')">Dashboard</button>
-            <button class="nav-btn" onclick="showTab('students')">Alunas</button>
             <button class="nav-btn" onclick="showTab('leads')">Leads</button>
-            <button class="nav-btn" onclick="showTab('whatsapp')">WhatsApp</button>
         </nav>
 
         <main class="main">
@@ -26,31 +24,22 @@
                 <h2>Dashboard</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <span class="stat-value" id="total-students">0</span>
-                        <span class="stat-label">Alunas</span>
-                    </div>
-                    <div class="stat-card">
                         <span class="stat-value" id="total-leads">0</span>
-                        <span class="stat-label">Leads</span>
+                        <span class="stat-label">Total de Leads</span>
                     </div>
                     <div class="stat-card">
-                        <span class="stat-value" id="total-orders">0</span>
-                        <span class="stat-label">Vendas</span>
+                        <span class="stat-value" id="leads-andamento">0</span>
+                        <span class="stat-label">Em Andamento</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="leads-fechado-ganho">0</span>
+                        <span class="stat-label">Fechado (Ganho)</span>
                     </div>
                     <div class="stat-card">
                         <span class="stat-value" id="conversion-rate">0%</span>
-                        <span class="stat-label">Conversao</span>
+                        <span class="stat-label">Taxa de Conversao</span>
                     </div>
                 </div>
-                <p style="color:#888;margin-top:2rem">
-                    Este e o template base. Use AIOX para construir o restante!
-                </p>
-            </section>
-
-            <!-- Alunas -->
-            <section id="tab-students" class="tab-content">
-                <h2>Kanban de Alunas</h2>
-                <p>Implemente com: <code>@sm *create-story "Kanban de alunas"</code></p>
             </section>
 
             <!-- Leads -->
@@ -66,12 +55,6 @@
                     <button type="button" class="btn-secondary" onclick="toggleNewLeadForm(false)">Cancelar</button>
                 </form>
                 <div id="kanban-board" class="kanban-board"></div>
-            </section>
-
-            <!-- WhatsApp -->
-            <section id="tab-whatsapp" class="tab-content">
-                <h2>WhatsApp</h2>
-                <p>Implemente com: <code>@sm *create-story "Integracao WhatsApp Evolution API"</code></p>
             </section>
         </main>
     </div>

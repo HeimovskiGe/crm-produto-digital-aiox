@@ -1,6 +1,6 @@
 """Endpoints de Leads - funil de prospeccao (Piramide da Prospeccao)."""
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -52,6 +52,27 @@ async def list_etapas_processo():
 @router.get("/meta/qualificacao")
 async def list_qualificacao():
     return PIPELINE_STAGE_LABELS
+
+
+@router.get("/metrics/resumo")
+async def metrics_resumo(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Lead.etapa_processo, func.count()).group_by(Lead.etapa_processo))
+    counts = {etapa.value: count for etapa, count in result.all()}
+
+    total = sum(counts.values())
+    fechado_ganho = counts.get(EtapaProcesso.FECHADO_GANHO.value, 0)
+    fechado_perdido = counts.get(EtapaProcesso.FECHADO_PERDIDO.value, 0)
+    desqualificado = counts.get(EtapaProcesso.DESQUALIFICADO.value, 0)
+    fechados_total = fechado_ganho + fechado_perdido
+
+    return {
+        "total": total,
+        "em_andamento": total - fechado_ganho - fechado_perdido - desqualificado,
+        "fechado_ganho": fechado_ganho,
+        "fechado_perdido": fechado_perdido,
+        "desqualificado": desqualificado,
+        "taxa_conversao": round((fechado_ganho / fechados_total) * 100, 1) if fechados_total else 0.0,
+    }
 
 
 @router.get("", response_model=list[LeadOut])
