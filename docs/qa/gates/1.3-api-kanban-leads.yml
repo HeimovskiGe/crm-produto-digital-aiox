@@ -1,0 +1,57 @@
+schema: 1
+story: '1.3'
+story_title: 'API de Leads + Kanban do Funil de Prospecção'
+gate: PASS
+status_reason: 'Todas as 7 ACs verificadas via curl (todos os endpoints) e navegador real (criar lead, drag-and-drop, persistência pós-reload). Código morto encontrado e removido durante a revisão. Nenhum item CRITICAL/HIGH restante.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2026-09-16T03:35:00-03:00'
+
+top_issues:
+  - id: 'CRM-1.3-01'
+    severity: low
+    category: quality
+    description: 'GET /api/leads não pagina.'
+    location: 'app/routers/leads.py'
+    suggested_owner: dev
+    remediation: 'Adicionar paginação (limit/offset ou cursor) quando o volume de leads justificar.'
+  - id: 'CRM-1.3-02'
+    severity: medium
+    category: security
+    description: 'Nenhum endpoint tem autenticação.'
+    location: 'app/routers/leads.py'
+    suggested_owner: architect
+    remediation: 'Definir estratégia de auth (API key simples ou sessão) antes de expor dado real de cliente publicamente.'
+
+waiver: { active: false }
+
+quality_score: 90
+expires: '2026-09-30T00:00:00-03:00'
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: CONCERNS
+    notes: 'Sem autenticação em nenhum endpoint. Aceitável no estágio atual (protótipo pessoal), mas bloqueante antes de expor dado real de terceiros.'
+  performance:
+    status: PASS
+    notes: 'Sem paginação em GET /api/leads, mas volume atual não justifica ainda.'
+  reliability:
+    status: PASS
+    notes: '404 explícito em todos os endpoints que recebem lead_id; cascade de delete confirmado real no Postgres.'
+  maintainability:
+    status: PASS
+    notes: 'Código morto (escapeHtml) removido durante a revisão.'
+
+recommendations:
+  immediate: []
+  future:
+    - action: 'Definir e implementar autenticação antes de expor a API publicamente com dado real'
+      refs: ['app/routers/leads.py']
+    - action: 'Paginação em GET /api/leads quando o volume justificar'
+      refs: ['app/routers/leads.py']

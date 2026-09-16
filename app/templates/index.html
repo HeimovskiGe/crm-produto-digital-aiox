@@ -55,8 +55,17 @@
 
             <!-- Leads -->
             <section id="tab-leads" class="tab-content">
-                <h2>Recovery de Leads</h2>
-                <p>Implemente com: <code>@sm *create-story "Sistema de recovery de leads"</code></p>
+                <h2>Leads &mdash; Funil de Prospeccao</h2>
+                <button class="btn-primary" onclick="toggleNewLeadForm(true)">+ Novo Lead</button>
+                <form id="new-lead-form" class="lead-form" onsubmit="createLead(event)">
+                    <input name="nome" placeholder="Nome" required>
+                    <input name="empresa" placeholder="Empresa">
+                    <input name="telefone" placeholder="Telefone">
+                    <input name="email" type="email" placeholder="E-mail">
+                    <button type="submit" class="btn-primary">Salvar</button>
+                    <button type="button" class="btn-secondary" onclick="toggleNewLeadForm(false)">Cancelar</button>
+                </form>
+                <div id="kanban-board" class="kanban-board"></div>
             </section>
 
             <!-- WhatsApp -->
