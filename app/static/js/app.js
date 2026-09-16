@@ -189,9 +189,12 @@ function renderKanban() {
             reuniaoBtn.textContent = '📋 Reuniao / Roteiro';
             reuniaoBtn.addEventListener('click', function(ev) {
                 ev.stopPropagation();
-                toggleReuniaoPanel(lead.id, card);
+                openLeadModal(lead.id);
             });
             card.appendChild(reuniaoBtn);
+
+            var moverSelect = buildMoverEtapaSelect(lead);
+            card.appendChild(moverSelect);
 
             cardsEl.appendChild(card);
         });
@@ -199,6 +202,28 @@ function renderKanban() {
         col.appendChild(cardsEl);
         board.appendChild(col);
     });
+}
+
+function buildMoverEtapaSelect(lead) {
+    var select = document.createElement('select');
+    select.className = 'mover-select';
+    etapasCache.forEach(function(etapa) {
+        var opt = document.createElement('option');
+        opt.value = etapa.value;
+        opt.textContent = 'Mover para: ' + etapa.label;
+        if (etapa.value === lead.etapa_processo) opt.selected = true;
+        select.appendChild(opt);
+    });
+    select.addEventListener('click', function(ev) { ev.stopPropagation(); });
+    select.addEventListener('change', async function() {
+        await fetch('/api/leads/' + lead.id, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ etapa_processo: select.value })
+        });
+        await loadLeads();
+    });
+    return select;
 }
 
 var CANAL_OPTIONS = [
@@ -441,6 +466,8 @@ function renderEmpresariosBoard() {
             });
             card.appendChild(prospectarBtn);
 
+            card.appendChild(buildMoverStatusSelect(fonteAtual, item, statusCol.value));
+
             cardsEl.appendChild(card);
         });
 
@@ -458,6 +485,28 @@ function renderEmpresariosBoard() {
         col.appendChild(cardsEl);
         board.appendChild(col);
     });
+}
+
+function buildMoverStatusSelect(fonte, item, statusAtual) {
+    var select = document.createElement('select');
+    select.className = 'mover-select';
+    statusColumnsCache.forEach(function(s) {
+        var opt = document.createElement('option');
+        opt.value = s.value;
+        opt.textContent = 'Mover para: ' + s.label;
+        if (s.value === statusAtual) opt.selected = true;
+        select.appendChild(opt);
+    });
+    select.addEventListener('click', function(ev) { ev.stopPropagation(); });
+    select.addEventListener('change', async function() {
+        await fetch('/api/empresarios/' + fonte + '/' + item.id, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: select.value })
+        });
+        reloadFonteAtual();
+    });
+    return select;
 }
 
 function onDragStartEmp(e) {
@@ -545,46 +594,108 @@ async function prospectarEmpresario(fonte, item, btnEl) {
     }
 }
 
-/* ---- Reuniao de Venda (7 Passos) - painel no card do Lead ---- */
+/* ---- Modal do Lead: info + Reuniao de Venda (7 Passos) + Referidos ---- */
 
 var ETAPA_REUNIAO_ORDEM = ['apresentacao', 'conexao', 'decisao_imediata', 'showtime', 'fechamento', 'referidos', 'validacao'];
 
-async function toggleReuniaoPanel(leadId, card) {
-    var existing = card.querySelector('.reuniao-panel');
-    if (existing) { existing.remove(); return; }
+var modalState = null; // { leadId, lead, roteiro, reuniao }
 
-    var panel = document.createElement('div');
-    panel.className = 'reuniao-panel';
-    panel.textContent = 'Carregando...';
-    card.appendChild(panel);
+function closeLeadModal() {
+    document.getElementById('lead-modal').classList.remove('open');
+    modalState = null;
+}
 
+async function openLeadModal(leadId) {
+    var modal = document.getElementById('lead-modal');
+    var box = document.getElementById('lead-modal-box');
+    box.innerHTML = 'Carregando...';
+    modal.classList.add('open');
+
+    var lead = leadsCache.find(function(l) { return l.id === leadId; });
     var roteiroResp = await fetch('/api/leads/' + leadId + '/roteiro');
     var roteiro = await roteiroResp.json();
-
     var reuniaoResp = await fetch('/api/leads/' + leadId + '/reunioes/atual');
     var reuniao = reuniaoResp.ok ? await reuniaoResp.json() : null;
 
-    renderReuniaoPanel(panel, leadId, roteiro, reuniao);
+    modalState = { leadId: leadId, lead: lead, roteiro: roteiro, reuniao: reuniao };
+    await renderLeadModal();
 }
 
-function renderReuniaoPanel(panel, leadId, roteiro, reuniao) {
-    panel.innerHTML = '';
+function leadInfoItem(label, value, link) {
+    var d = document.createElement('div');
+    var s = document.createElement('span');
+    s.textContent = label;
+    d.appendChild(s);
+    if (value && link) {
+        var a = document.createElement('a');
+        a.href = link;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = value;
+        d.appendChild(a);
+    } else {
+        d.appendChild(document.createTextNode(value || '-'));
+    }
+    return d;
+}
 
-    if (!reuniao) {
+async function renderLeadModal() {
+    var box = document.getElementById('lead-modal-box');
+    box.innerHTML = '';
+    var st = modalState;
+    if (!st) return;
+    var lead = st.lead;
+
+    var header = document.createElement('div');
+    header.className = 'modal-header';
+    var titleWrap = document.createElement('div');
+    var h3 = document.createElement('h3');
+    h3.textContent = lead ? lead.nome : ('Lead #' + st.leadId);
+    titleWrap.appendChild(h3);
+    if (lead && lead.empresa && lead.empresa !== lead.nome) {
+        var sub = document.createElement('small');
+        sub.textContent = lead.empresa;
+        titleWrap.appendChild(sub);
+    }
+    header.appendChild(titleWrap);
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'modal-close';
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', closeLeadModal);
+    header.appendChild(closeBtn);
+    box.appendChild(header);
+
+    if (lead) {
+        var grid = document.createElement('div');
+        grid.className = 'lead-info-grid';
+        var waLink = lead.telefone ? 'https://wa.me/' + lead.telefone.replace(/\D/g, '') : null;
+        grid.appendChild(leadInfoItem('Telefone', lead.telefone, waLink));
+        grid.appendChild(leadInfoItem('E-mail', lead.email));
+        grid.appendChild(leadInfoItem('Territorio', lead.territorio));
+        grid.appendChild(leadInfoItem('Vertical', lead.vertical));
+        grid.appendChild(leadInfoItem('Qualificacao', qualificacaoLabel(lead.pipeline_stage)));
+        grid.appendChild(leadInfoItem('Tentativas de contato', String(lead.tentativas_contato)));
+        box.appendChild(grid);
+    }
+
+    if (!st.reuniao) {
         var startBtn = document.createElement('button');
         startBtn.type = 'button';
         startBtn.className = 'btn-primary';
         startBtn.style.width = '100%';
-        startBtn.textContent = '▶ Iniciar Reuniao de Venda';
+        startBtn.textContent = '▶ Iniciar Reuniao de Venda (7 Passos)';
         startBtn.addEventListener('click', async function() {
-            var resp = await fetch('/api/leads/' + leadId + '/reunioes', { method: 'POST' });
-            var novaReuniao = await resp.json();
+            var resp = await fetch('/api/leads/' + st.leadId + '/reunioes', { method: 'POST' });
+            st.reuniao = await resp.json();
             await loadLeads();
-            renderReuniaoPanel(panel, leadId, roteiro, novaReuniao);
+            await renderLeadModal();
         });
-        panel.appendChild(startBtn);
+        box.appendChild(startBtn);
         return;
     }
+
+    var reuniao = st.reuniao;
 
     var nav = document.createElement('div');
     nav.className = 'etapa-nav';
@@ -600,23 +711,23 @@ function renderReuniaoPanel(panel, leadId, roteiro, reuniao) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ etapa_atual: etapaKey })
             });
-            var atualizada = await resp.json();
-            renderReuniaoPanel(panel, leadId, roteiro, atualizada);
+            st.reuniao = await resp.json();
+            await renderLeadModal();
         });
         nav.appendChild(btn);
     });
-    panel.appendChild(nav);
+    box.appendChild(nav);
 
-    var passoAtual = roteiro.find(function(p) { return p.etapa === reuniao.etapa_atual; });
+    var passoAtual = st.roteiro.find(function(p) { return p.etapa === reuniao.etapa_atual; });
     if (passoAtual) {
         var titulo = document.createElement('strong');
         titulo.textContent = passoAtual.titulo;
-        panel.appendChild(titulo);
+        box.appendChild(titulo);
 
         var objetivo = document.createElement('p');
         objetivo.className = 'roteiro-objetivo';
         objetivo.textContent = passoAtual.objetivo;
-        panel.appendChild(objetivo);
+        box.appendChild(objetivo);
 
         var lista = document.createElement('ul');
         lista.className = 'roteiro-perguntas';
@@ -625,7 +736,7 @@ function renderReuniaoPanel(panel, leadId, roteiro, reuniao) {
             li.textContent = p;
             lista.appendChild(li);
         });
-        panel.appendChild(lista);
+        box.appendChild(lista);
     }
 
     if (reuniao.etapa_atual === 'decisao_imediata' && !reuniao.di_confirmada) {
@@ -640,10 +751,14 @@ function renderReuniaoPanel(panel, leadId, roteiro, reuniao) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ di_confirmada: true })
             });
-            var atualizada = await resp.json();
-            renderReuniaoPanel(panel, leadId, roteiro, atualizada);
+            st.reuniao = await resp.json();
+            await renderLeadModal();
         });
-        panel.appendChild(diBtn);
+        box.appendChild(diBtn);
+    }
+
+    if (reuniao.etapa_atual === 'referidos' || reuniao.etapa_atual === 'validacao') {
+        await renderReferidosSection(box, st.leadId, reuniao.etapa_atual);
     }
 
     if (!reuniao.resultado) {
@@ -665,7 +780,7 @@ function renderReuniaoPanel(panel, leadId, roteiro, reuniao) {
                 body: JSON.stringify({ resultado: 'ganho', valor_fechado: parseFloat(valorInput.value) || null })
             });
             await loadLeads();
-            panel.remove();
+            closeLeadModal();
         });
 
         var perdidoBtn = document.createElement('button');
@@ -679,12 +794,80 @@ function renderReuniaoPanel(panel, leadId, roteiro, reuniao) {
                 body: JSON.stringify({ resultado: 'perdido' })
             });
             await loadLeads();
-            panel.remove();
+            closeLeadModal();
         });
 
         fecharRow.appendChild(valorInput);
         fecharRow.appendChild(ganhoBtn);
         fecharRow.appendChild(perdidoBtn);
-        panel.appendChild(fecharRow);
+        box.appendChild(fecharRow);
     }
+}
+
+async function renderReferidosSection(box, leadId, etapaAtual) {
+    var wrap = document.createElement('div');
+
+    var subtitle = document.createElement('strong');
+    subtitle.textContent = etapaAtual === 'referidos'
+        ? 'Referidos pegos nesta ligacao (pegue de 5 a 10, na hora)'
+        : 'Validacao - mensagem de pre-aviso enviada pro indicado?';
+    wrap.appendChild(subtitle);
+
+    var resp = await fetch('/api/leads/' + leadId + '/referidos');
+    var referidos = resp.ok ? await resp.json() : [];
+
+    var lista = document.createElement('ul');
+    lista.className = 'referidos-lista';
+    referidos.forEach(function(r) {
+        var li = document.createElement('li');
+        var info = document.createElement('span');
+        info.textContent = r.nome_indicado + ' · ' + r.contato_indicado;
+        li.appendChild(info);
+
+        var label = document.createElement('label');
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = r.mensagem_validacao_enviada;
+        checkbox.addEventListener('change', async function() {
+            await fetch('/api/referidos/' + r.id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mensagem_validacao_enviada: checkbox.checked })
+            });
+        });
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode('validado'));
+        li.appendChild(label);
+        lista.appendChild(li);
+    });
+    wrap.appendChild(lista);
+
+    if (etapaAtual === 'referidos') {
+        var form = document.createElement('div');
+        form.className = 'referidos-form';
+        var nomeInput = document.createElement('input');
+        nomeInput.placeholder = 'Nome do indicado';
+        var contatoInput = document.createElement('input');
+        contatoInput.placeholder = 'Contato (telefone/whatsapp)';
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'btn-primary';
+        addBtn.style.margin = '0';
+        addBtn.textContent = '+ Adicionar';
+        addBtn.addEventListener('click', async function() {
+            if (!nomeInput.value || !contatoInput.value) return;
+            await fetch('/api/leads/' + leadId + '/referidos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome_indicado: nomeInput.value, contato_indicado: contatoInput.value })
+            });
+            await renderLeadModal();
+        });
+        form.appendChild(nomeInput);
+        form.appendChild(contatoInput);
+        form.appendChild(addBtn);
+        wrap.appendChild(form);
+    }
+
+    box.appendChild(wrap);
 }

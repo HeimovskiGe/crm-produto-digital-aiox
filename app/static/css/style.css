@@ -318,20 +318,9 @@ code {
     font-weight: 600;
 }
 
-/* ---- Reuniao de Venda / Roteiro dos 7 Passos ---- */
+/* ---- Reuniao de Venda / Roteiro dos 7 Passos (dentro do modal do Lead) ---- */
 
-.reuniao-panel {
-    margin-top: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    background: var(--background);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 0.6rem;
-    animation: fadeInUp 0.2s ease;
-}
-.etapa-nav { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.etapa-nav { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
 .etapa-btn {
     width: 1.8rem;
     height: 1.8rem;
@@ -372,3 +361,122 @@ code {
     padding: 0.35rem;
 }
 .fechar-row button { margin: 0; padding: 0.35rem 0.6rem; font-size: 0.75rem; white-space: nowrap; }
+
+/* ---- Mover de etapa (fallback pra touch, onde drag-and-drop nao funciona) ---- */
+
+.mover-select {
+    width: 100%;
+    margin-top: 6px;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted-foreground);
+    font-family: inherit;
+    font-size: 0.72rem;
+    padding: 0.3rem;
+}
+.mover-select:focus { outline: none; border-color: var(--primary); color: var(--foreground); }
+
+/* ---- Referidos (Passo 6/7) ---- */
+
+.referidos-form { display: flex; gap: 0.35rem; margin-bottom: 0.5rem; }
+.referidos-form input {
+    flex: 1;
+    min-width: 0;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--foreground);
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.5rem;
+}
+.referidos-lista { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.5rem; }
+.referidos-lista li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+}
+.referidos-lista label { display: flex; align-items: center; gap: 0.3rem; color: var(--muted-foreground); font-size: 0.7rem; white-space: nowrap; }
+
+/* ---- Modal de Lead / Roteiro dos 7 Passos ---- */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, black 65%, transparent);
+    align-items: flex-start;
+    justify-content: center;
+    padding: 4vh 1rem;
+    overflow-y: auto;
+    z-index: 100;
+    animation: fadeInUp 0.2s ease;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: min(640px, 100%);
+    padding: 1.4rem;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.9rem; }
+.modal-header h3 { font-size: 1.2rem; color: var(--foreground); }
+.modal-header small { display: block; color: var(--muted-foreground); margin-top: 0.2rem; }
+.modal-close {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted-foreground);
+    border-radius: 8px;
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+    font-size: 1rem;
+    flex: none;
+}
+.modal-close:hover { border-color: var(--primary); color: var(--foreground); }
+
+.lead-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.5rem;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 1rem;
+}
+.lead-info-grid div { font-size: 0.78rem; }
+.lead-info-grid span { display: block; color: var(--muted-foreground); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.lead-info-grid a { color: var(--primary); text-decoration: none; }
+
+/* ---- Responsividade ---- */
+
+@media (max-width: 860px) {
+    .app { padding: 1rem; }
+    .header { padding: 1.5rem 0 1rem; }
+    .header h1 { font-size: 1.5rem; }
+
+    .intencao-bar { gap: 1rem; padding: 0.7rem 1rem; }
+
+    .kanban-board {
+        flex-direction: column;
+        overflow-x: visible;
+    }
+    .kanban-col {
+        width: 100%;
+        min-width: 0;
+        max-height: none;
+    }
+    .kanban-cards { max-height: 60vh; }
+
+    .modal-box { padding: 1rem; }
+    .lead-info-grid { grid-template-columns: repeat(2, 1fr); }
+}
