@@ -5,13 +5,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.atividade import AtividadeProspeccao
-from app.models.lead import Lead, PipelineStage
+from app.models.lead import EtapaProcesso, Lead, PipelineStage
 from app.schemas.atividade import AtividadeCreate, AtividadeOut
 from app.schemas.lead import LeadCreate, LeadOut, LeadUpdate
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
 
-# Unica fonte de rotulo dos estagios - o frontend consome isto, nao duplica a lista.
+# Unica fonte de rotulo do funil operacional (aula 1, Lucas Carmo) - coluna
+# principal do kanban. Termos literais das aulas, nao traduzidos/parafraseados.
+ETAPA_PROCESSO_LABELS = [
+    {"value": EtapaProcesso.PROSPECCAO.value, "label": "Prospecção"},
+    {"value": EtapaProcesso.FOLLOW_PROSPECCAO.value, "label": "Follow de Prospecção"},
+    {"value": EtapaProcesso.QUALIFICADO.value, "label": "Qualificado"},
+    {"value": EtapaProcesso.DESQUALIFICADO.value, "label": "Desqualificado"},
+    {"value": EtapaProcesso.ASSENTAMENTO.value, "label": "Assentamento"},
+    {"value": EtapaProcesso.REUNIAO_VENDA.value, "label": "Reunião de Venda"},
+    {"value": EtapaProcesso.NEGOCIACAO.value, "label": "Negociação"},
+    {"value": EtapaProcesso.FECHADO_GANHO.value, "label": "Fechado (Ganho)"},
+    {"value": EtapaProcesso.FECHADO_PERDIDO.value, "label": "Fechado (Perdido)"},
+]
+
+# Unica fonte de rotulo da Piramide da Prospeccao (livro) - vira badge de
+# qualificacao no card, nao mais a coluna do kanban.
 PIPELINE_STAGE_LABELS = [
     {"value": PipelineStage.BASE_NAO_VERIFICADO.value, "label": "Base (nao verificado)"},
     {"value": PipelineStage.INFORMACAO_SOLIDA.value, "label": "Informacao solida"},
@@ -29,8 +44,13 @@ async def _get_lead_or_404(lead_id: int, db: AsyncSession) -> Lead:
     return lead
 
 
-@router.get("/meta/stages")
-async def list_stages():
+@router.get("/meta/etapas-processo")
+async def list_etapas_processo():
+    return ETAPA_PROCESSO_LABELS
+
+
+@router.get("/meta/qualificacao")
+async def list_qualificacao():
     return PIPELINE_STAGE_LABELS
 
 

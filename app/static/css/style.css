@@ -171,3 +171,12 @@ code {
 .kanban-card.dragging { opacity: 0.4; }
 .kanban-card strong { color: var(--text); }
 .kanban-card small { color: var(--muted); }
+
+.tags { margin-top: 6px; display: flex; gap: 5px; flex-wrap: wrap; }
+.tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: #2a3140;
+    color: var(--muted);
+}

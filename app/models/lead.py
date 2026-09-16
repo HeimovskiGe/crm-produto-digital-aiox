@@ -42,6 +42,20 @@ class NivelFamiliaridade(str, enum.Enum):
     FRIO = "frio"
 
 
+class EtapaProcesso(str, enum.Enum):
+    """Funil operacional (aula 1, Lucas Carmo) - coluna principal do kanban."""
+
+    PROSPECCAO = "prospeccao"
+    FOLLOW_PROSPECCAO = "follow_prospeccao"
+    QUALIFICADO = "qualificado"
+    DESQUALIFICADO = "desqualificado"
+    ASSENTAMENTO = "assentamento"
+    REUNIAO_VENDA = "reuniao_venda"
+    NEGOCIACAO = "negociacao"
+    FECHADO_GANHO = "fechado_ganho"
+    FECHADO_PERDIDO = "fechado_perdido"
+
+
 class Lead(Base):
     __tablename__ = "leads"
 
@@ -56,6 +70,12 @@ class Lead(Base):
         Enum(PapelDecisor, name="papel_decisor_enum", values_callable=lambda e: [x.value for x in e]),
         nullable=True,
     )
+    etapa_processo: Mapped[EtapaProcesso] = mapped_column(
+        Enum(EtapaProcesso, name="etapa_processo_enum", values_callable=lambda e: [x.value for x in e]),
+        default=EtapaProcesso.PROSPECCAO,
+        nullable=False,
+    )
+    decisor_confirmado_presente: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     pipeline_stage: Mapped[PipelineStage] = mapped_column(
         Enum(PipelineStage, name="pipeline_stage_enum", values_callable=lambda e: [x.value for x in e]),
         default=PipelineStage.BASE_NAO_VERIFICADO,

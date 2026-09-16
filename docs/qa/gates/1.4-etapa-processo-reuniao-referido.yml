@@ -1,0 +1,57 @@
+schema: 1
+story: '1.4'
+story_title: 'Funil Operacional (Lucas Carmo) + Kanban Reestruturado + Entidades ReuniaoVenda/Referido'
+gate: CONCERNS
+status_reason: 'Todas as 12 ACs verificadas via curl/psql/leitura de código. Rebaixado de PASS pra CONCERNS só porque a verificação visual no navegador não pôde ser feita (extensão Claude in Chrome offline durante toda a story) - nenhum bug encontrado nessa revisão.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2026-09-16T11:05:00-03:00'
+
+top_issues:
+  - id: 'CRM-1.4-01'
+    severity: medium
+    category: testability
+    description: 'Kanban com 9 colunas (etapa_processo) não foi verificado visualmente no navegador nesta story.'
+    location: 'app/static/js/app.js, app/templates/index.html'
+    suggested_owner: dev
+    remediation: 'Abrir a tela e confirmar renderização, badge de qualificação e drag-and-drop assim que a extensão do navegador reconectar.'
+  - id: 'CRM-1.4-02'
+    severity: low
+    category: quality
+    description: '9 colunas fixas de 270px vão exigir bastante scroll horizontal.'
+    location: 'app/static/css/style.css'
+    suggested_owner: ux-design-expert
+    remediation: 'Considerar colunas mais estreitas, colapsáveis, ou ocultar colunas vazias numa story de polish visual futura.'
+
+waiver: { active: false }
+
+quality_score: 80
+expires: '2026-09-30T00:00:00-03:00'
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Nenhuma mudança de superfície.'
+  performance:
+    status: CONCERNS
+    notes: '9 colunas de kanban vão ficar mais lentas de navegar visualmente conforme o volume de leads cresce (relevante para a story de importação em massa já planejada em seguida).'
+  reliability:
+    status: PASS
+    notes: 'Dois bugs reais de migration (CREATE TYPE ausente em add_column; erro de sequência de teste do próprio dev) encontrados e corrigidos/documentados antes do commit.'
+  maintainability:
+    status: PASS
+    notes: 'Nomenclatura de enum/rótulos segue literalmente os termos das aulas, por pedido explícito do usuário.'
+
+recommendations:
+  immediate:
+    - action: 'Verificar visualmente no navegador assim que possível'
+      refs: ['app/static/js/app.js']
+  future:
+    - action: 'Revisar layout do kanban de 9 colunas para telas menores'
+      refs: ['app/static/css/style.css']

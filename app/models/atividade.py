@@ -30,6 +30,7 @@ class ObjetivoContato(str, enum.Enum):
     QUALIFICAR_INFORMACAO = "qualificar_informacao"
     FECHAR_VENDA = "fechar_venda"
     CONSTRUIR_FAMILIARIDADE = "construir_familiaridade"
+    ASSENTAMENTO = "assentamento"
 
 
 class ResultadoContato(str, enum.Enum):

@@ -29,14 +29,25 @@ async function loadStats() {
 
 document.addEventListener('DOMContentLoaded', loadStats);
 
-/* ---- Kanban de Leads (Piramide da Prospeccao) ---- */
+/* ---- Kanban de Leads (funil operacional - aulas Lucas Carmo) ---- */
 
-var stagesCache = [];
+var etapasCache = [];
+var qualificacaoCache = [];
 var leadsCache = [];
 
 async function loadStages() {
-    var resp = await fetch('/api/leads/meta/stages');
-    stagesCache = await resp.json();
+    var resp = await fetch('/api/leads/meta/etapas-processo');
+    etapasCache = await resp.json();
+}
+
+async function loadQualificacao() {
+    var resp = await fetch('/api/leads/meta/qualificacao');
+    qualificacaoCache = await resp.json();
+}
+
+function qualificacaoLabel(pipelineStage) {
+    var found = qualificacaoCache.find(function(q) { return q.value === pipelineStage; });
+    return found ? found.label : pipelineStage;
 }
 
 async function loadLeads() {
@@ -50,17 +61,17 @@ function renderKanban() {
     if (!board) return;
     board.innerHTML = '';
 
-    stagesCache.forEach(function(stage) {
-        var leadsInStage = leadsCache.filter(function(l) { return l.pipeline_stage === stage.value; });
+    etapasCache.forEach(function(etapa) {
+        var leadsInEtapa = leadsCache.filter(function(l) { return l.etapa_processo === etapa.value; });
 
         var col = document.createElement('div');
         col.className = 'kanban-col';
 
         var header = document.createElement('h3');
-        header.textContent = stage.label + ' (' + leadsInStage.length + ')';
+        header.textContent = etapa.label + ' (' + leadsInEtapa.length + ')';
         col.appendChild(header);
 
-        col.dataset.stage = stage.value;
+        col.dataset.stage = etapa.value;
         col.addEventListener('dragover', onDragOver);
         col.addEventListener('dragleave', onDragLeave);
         col.addEventListener('drop', onDrop);
@@ -68,7 +79,7 @@ function renderKanban() {
         var cardsEl = document.createElement('div');
         cardsEl.className = 'kanban-cards';
 
-        leadsInStage.forEach(function(lead) {
+        leadsInEtapa.forEach(function(lead) {
             var card = document.createElement('div');
             card.className = 'kanban-card';
             card.draggable = true;
@@ -86,6 +97,14 @@ function renderKanban() {
                 card.appendChild(document.createElement('br'));
                 card.appendChild(empresa);
             }
+
+            var tag = document.createElement('div');
+            tag.className = 'tags';
+            var badge = document.createElement('span');
+            badge.className = 'tag';
+            badge.textContent = qualificacaoLabel(lead.pipeline_stage);
+            tag.appendChild(badge);
+            card.appendChild(tag);
 
             cardsEl.appendChild(card);
         });
@@ -121,7 +140,7 @@ async function onDrop(e) {
     await fetch('/api/leads/' + leadId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pipeline_stage: newStage })
+        body: JSON.stringify({ etapa_processo: newStage })
     });
     await loadLeads();
 }
@@ -153,6 +172,6 @@ async function createLead(event) {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
-    await loadStages();
+    await Promise.all([loadStages(), loadQualificacao()]);
     await loadLeads();
 });

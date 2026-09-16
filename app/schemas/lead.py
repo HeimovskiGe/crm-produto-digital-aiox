@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.models.lead import NivelFamiliaridade, NivelQualificacao, PapelDecisor, PipelineStage
+from app.models.lead import EtapaProcesso, NivelFamiliaridade, NivelQualificacao, PapelDecisor, PipelineStage
 
 
 class LeadBase(BaseModel):
@@ -33,6 +33,8 @@ class LeadUpdate(BaseModel):
     telefone: str | None = None
     email: str | None = None
     papel_decisor: PapelDecisor | None = None
+    etapa_processo: EtapaProcesso | None = None
+    decisor_confirmado_presente: bool | None = None
     pipeline_stage: PipelineStage | None = None
     nivel_qualificacao: NivelQualificacao | None = None
     nivel_familiaridade: NivelFamiliaridade | None = None
@@ -51,6 +53,8 @@ class LeadOut(LeadBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    etapa_processo: EtapaProcesso
+    decisor_confirmado_presente: bool | None
     pipeline_stage: PipelineStage
     nivel_qualificacao: NivelQualificacao | None
     nivel_familiaridade: NivelFamiliaridade | None
