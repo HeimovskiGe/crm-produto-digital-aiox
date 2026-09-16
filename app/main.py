@@ -15,7 +15,7 @@ from app.config import settings
 from app.database import init_db
 
 # Routers (descomentar conforme implementar)
-from app.routers import health, leads
+from app.routers import health, leads, prospeccao
 # from app.routers import webhooks
 # from app.routers import customers
 # from app.routers import orders
@@ -57,6 +57,7 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 # Register routers
 app.include_router(health.router)
 app.include_router(leads.router)
+app.include_router(prospeccao.router)
 # app.include_router(webhooks.router)
 # app.include_router(customers.router)
 # app.include_router(orders.router)

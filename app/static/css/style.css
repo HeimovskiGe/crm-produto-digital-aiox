@@ -172,6 +172,77 @@ code {
 .kanban-card strong { color: var(--text); }
 .kanban-card small { color: var(--muted); }
 
+/* ---- Painel de Intencao de Prospeccao ---- */
+
+.intencao-bar {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1.2rem;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.3s, background 0.3s;
+}
+.intencao-item { display: flex; flex-direction: column; gap: 0.15rem; }
+.intencao-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.intencao-value { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.intencao-value input {
+    width: 3.5rem;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+}
+
+.intencao-bar.ok { border-color: var(--accent); }
+.intencao-bar.warn { border-color: var(--warn); background: #201a10; }
+.intencao-bar.warn #intencao-tempo { color: var(--warn); }
+.intencao-bar.danger { border-color: var(--danger); background: #241213; }
+.intencao-bar.danger #intencao-tempo { color: var(--danger); animation: pulse-danger 1.5s infinite; }
+
+@keyframes pulse-danger {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.btn-log-atividade {
+    margin-top: 8px;
+    width: 100%;
+    background: var(--panel);
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 0.3rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+.btn-log-atividade:hover { border-color: var(--accent-2); color: var(--text); }
+
+.atividade-form {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+.atividade-form select {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.75rem;
+    padding: 0.3rem;
+}
+.atividade-form .btn-primary { margin: 0; padding: 0.4rem; font-size: 0.75rem; }
+
 .tags { margin-top: 6px; display: flex; gap: 5px; flex-wrap: wrap; }
 .tag {
     font-size: 10px;

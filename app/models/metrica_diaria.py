@@ -16,6 +16,10 @@ class MetricaDiaria(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     data: Mapped[date] = mapped_column(Date, unique=True, nullable=False)
 
+    # Meta pessoal do vendedor pro dia (Painel de Intencao de Prospeccao,
+    # aula 2 - formula de proporcao pessoal, ex: 150 prospeccoes/dia).
+    meta_atividades: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
     ligacoes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     contatos_efetivos: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     emails_enviados: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

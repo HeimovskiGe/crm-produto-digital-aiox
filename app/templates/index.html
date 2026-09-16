@@ -13,6 +13,21 @@
             <p>Construido com AIOX + Claude Code</p>
         </header>
 
+        <div id="intencao-bar" class="intencao-bar">
+            <div class="intencao-item">
+                <span class="intencao-label">Meta hoje</span>
+                <span class="intencao-value"><span id="intencao-feito">0</span> / <input type="number" id="intencao-meta-input" min="0" onchange="updateMeta(this.value)"></span>
+            </div>
+            <div class="intencao-item">
+                <span class="intencao-label">Sequencia</span>
+                <span class="intencao-value">🔥 <span id="intencao-streak">0</span> dias</span>
+            </div>
+            <div class="intencao-item">
+                <span class="intencao-label">Ultima atividade ha</span>
+                <span class="intencao-value" id="intencao-tempo">--:--:--</span>
+            </div>
+        </div>
+
         <nav class="nav">
             <button class="nav-btn active" onclick="showTab('dashboard')">Dashboard</button>
             <button class="nav-btn" onclick="showTab('leads')">Leads</button>
