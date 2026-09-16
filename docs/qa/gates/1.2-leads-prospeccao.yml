@@ -1,0 +1,59 @@
+schema: 1
+story: '1.2'
+story_title: 'Modelagem do Funil de Prospecção (Lead, Atividade, Métrica Diária)'
+gate: PASS
+status_reason: 'Todas as 8 ACs verificadas de forma independente contra o Supabase real. Um problema de performance (índice ausente em lead_id) foi encontrado e corrigido durante a própria revisão; nenhum item CRITICAL/HIGH restante.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2026-09-16T01:45:00-03:00'
+
+top_issues:
+  - id: 'CRM-1.2-01'
+    severity: low
+    category: correctness
+    description: '`Lead.customer_id` é um Integer simples, não uma ForeignKey real, porque a tabela `customers` ainda não existe (fora de escopo desta story).'
+    location: 'app/models/lead.py'
+    suggested_owner: architect
+    remediation: 'Converter para ForeignKey real numa migration futura, quando o model Customer (módulo pós-venda) for implementado.'
+  - id: 'CRM-1.2-02'
+    severity: low
+    category: quality
+    description: 'Sem relationship() ORM entre Lead e AtividadeProspeccao (nenhum back-ref lead.atividades).'
+    location: 'app/models/lead.py, app/models/atividade.py'
+    suggested_owner: dev
+    remediation: 'Adicionar relationship() na próxima story que consumir esses models via API, se fizer sentido para o padrão de acesso.'
+
+waiver: { active: false }
+
+quality_score: 90
+expires: '2026-09-30T00:00:00-03:00'
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Nenhuma superfície nova (sem endpoints de API nesta story). Credenciais do Supabase seguem só no .env gitignorado.'
+  performance:
+    status: PASS
+    notes: 'Índice ausente em atividades_prospeccao.lead_id encontrado e corrigido durante a revisão (ix_atividades_prospeccao_lead_id).'
+  reliability:
+    status: PASS
+    notes: 'Bug de enum órfão no downgrade() da migration (autogenerate não derruba CREATE TYPE) encontrado, corrigido e reverificado com ciclo upgrade/downgrade/upgrade completo contra o Supabase real.'
+  maintainability:
+    status: CONCERNS
+    notes: 'customer_id como Integer solto (não FK) e ausência de relationship() ORM são decisões documentadas mas geram dívida técnica leve para quando o módulo pós-venda existir.'
+
+recommendations:
+  immediate: []
+  future:
+    - action: 'Converter Lead.customer_id em ForeignKey real quando o model Customer existir'
+      refs: ['app/models/lead.py']
+    - action: 'Considerar relationship() ORM entre Lead e AtividadeProspeccao'
+      refs: ['app/models/lead.py', 'app/models/atividade.py']
+    - action: 'Instalar pytest/pytest-asyncio quando a próxima story adicionar lógica de negócio sobre esses models'
+      refs: ['requirements.txt']
