@@ -60,11 +60,13 @@ function renderKanban() {
         header.textContent = stage.label + ' (' + leadsInStage.length + ')';
         col.appendChild(header);
 
+        col.dataset.stage = stage.value;
+        col.addEventListener('dragover', onDragOver);
+        col.addEventListener('dragleave', onDragLeave);
+        col.addEventListener('drop', onDrop);
+
         var cardsEl = document.createElement('div');
         cardsEl.className = 'kanban-cards';
-        cardsEl.dataset.stage = stage.value;
-        cardsEl.addEventListener('dragover', onDragOver);
-        cardsEl.addEventListener('drop', onDrop);
 
         leadsInStage.forEach(function(lead) {
             var card = document.createElement('div');
@@ -72,6 +74,7 @@ function renderKanban() {
             card.draggable = true;
             card.dataset.leadId = lead.id;
             card.addEventListener('dragstart', onDragStart);
+            card.addEventListener('dragend', onDragEnd);
 
             var nome = document.createElement('strong');
             nome.textContent = lead.nome;
@@ -94,14 +97,25 @@ function renderKanban() {
 
 function onDragStart(e) {
     e.dataTransfer.setData('text/plain', e.target.dataset.leadId);
+    e.target.classList.add('dragging');
+}
+
+function onDragEnd(e) {
+    e.target.classList.remove('dragging');
 }
 
 function onDragOver(e) {
     e.preventDefault();
+    e.currentTarget.classList.add('dragover');
+}
+
+function onDragLeave(e) {
+    e.currentTarget.classList.remove('dragover');
 }
 
 async function onDrop(e) {
     e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
     var leadId = e.dataTransfer.getData('text/plain');
     var newStage = e.currentTarget.dataset.stage;
     await fetch('/api/leads/' + leadId, {
