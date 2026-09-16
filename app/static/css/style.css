@@ -1,38 +1,50 @@
-/* CRM Produto Digital - Base CSS
-   Paleta portada de pam-geh/prudentopolis-kanban (mesmo estilo usado
-   nos outros kanbans do usuario, em vez do roxo padrao do template). */
+/* CRM Produto Digital - identidade visual portada do AI Edita Studio
+   (fundo quase preto, verde-limao de marca, cards com glow, DM Sans). */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
 :root {
-    --bg: #0f1115;
-    --panel: #171a21;
-    --panel-2: #1f232c;
-    --border: #2a2f3a;
-    --text: #e6e9ef;
-    --muted: #8b93a3;
-    --accent: #25d366;
-    --accent-2: #4f8cff;
-    --danger: #ff5c5c;
-    --warn: #ffb648;
+    --background: #070a09;
+    --card: #0c110f;
+    --popover: #111814;
+    --foreground: #f3f8f4;
+    --primary: #b9f443;
+    --primary-foreground: #11170f;
+    --secondary: #1a2816;
+    --secondary-foreground: #c9f873;
+    --muted: #1b2620;
+    --muted-foreground: #93a298;
+    --accent: #162019;
+    --border: #233027;
+    --input: #101712;
+    --destructive: #ff5c5c;
+    --caution: #ffb648;
+    --radius: 14px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--background);
+    color: var(--foreground);
     min-height: 100vh;
 }
 
-.app { max-width: 1400px; margin: 0 auto; padding: 1rem; }
+.app { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
 
 .header {
     text-align: center;
-    padding: 2rem 0 1rem;
+    padding: 2.5rem 0 1.5rem;
     border-bottom: 1px solid var(--border);
     margin-bottom: 1.5rem;
 }
-.header h1 { font-size: 1.8rem; color: var(--accent); }
-.header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+.header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: -0.02em;
+}
+.header p { color: var(--muted-foreground); font-size: 0.9rem; margin-top: 0.4rem; }
 
 .nav {
     display: flex;
@@ -41,20 +53,35 @@ body {
     flex-wrap: wrap;
 }
 .nav-btn {
-    padding: 0.6rem 1.2rem;
-    background: var(--panel-2);
+    padding: 0.6rem 1.3rem;
+    background: var(--card);
     border: 1px solid var(--border);
-    color: var(--muted);
-    border-radius: 8px;
+    color: var(--muted-foreground);
+    border-radius: var(--radius);
     cursor: pointer;
+    font-family: inherit;
     font-size: 0.9rem;
-    transition: all 0.2s;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
-.nav-btn:hover { border-color: var(--accent-2); color: #fff; }
-.nav-btn.active { background: var(--accent-2); color: #fff; border-color: var(--accent-2); }
+.nav-btn:hover { border-color: var(--primary); color: var(--foreground); transform: translateY(-1px); }
+.nav-btn.active {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+    font-weight: 700;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);
+}
 
-.tab-content { display: none; }
+.tab-content { display: none; animation: fadeInUp 0.35s ease; }
 .tab-content.active { display: block; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+h2 { font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.9rem; }
 
 .stats-grid {
     display: grid;
@@ -63,68 +90,90 @@ body {
     margin-top: 1rem;
 }
 .stat-card {
-    background: var(--panel);
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse at top right, color-mix(in srgb, var(--primary) 14%, transparent), transparent 65%),
+        var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: var(--radius);
+    padding: 1.6rem;
     text-align: center;
+    transition: transform 0.2s ease, border-color 0.2s ease;
 }
+.stat-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
 .stat-value {
     display: block;
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--accent);
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: -0.02em;
 }
 .stat-label {
     display: block;
-    font-size: 0.85rem;
-    color: var(--muted);
-    margin-top: 0.3rem;
+    font-size: 0.82rem;
+    color: var(--muted-foreground);
+    margin-top: 0.35rem;
 }
 
 code {
-    background: var(--panel-2);
+    background: var(--muted);
     padding: 0.2rem 0.5rem;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 0.85rem;
-    color: var(--accent-2);
+    color: var(--secondary-foreground);
 }
 
-/* ---- Kanban de Leads ---- */
+/* ---- Botoes ---- */
 
 .btn-primary, .btn-secondary {
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
+    padding: 0.65rem 1.3rem;
+    border-radius: var(--radius);
     border: 1px solid var(--border);
     cursor: pointer;
+    font-family: inherit;
     font-size: 0.9rem;
     margin-bottom: 1rem;
-    transition: all 0.15s;
+    transition: all 0.18s ease;
 }
-.btn-primary { background: var(--accent-2); color: #fff; border-color: var(--accent-2); font-weight: 600; }
-.btn-primary:hover { filter: brightness(1.1); }
-.btn-secondary { background: var(--panel-2); color: var(--muted); }
-.btn-secondary:hover { border-color: var(--accent-2); color: #fff; }
+.btn-primary {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+    font-weight: 700;
+}
+.btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); filter: brightness(0.96); }
+.btn-secondary { background: var(--muted); color: var(--muted-foreground); }
+.btn-secondary:hover { border-color: var(--primary); color: var(--foreground); }
+
+/* ---- Formulario de Lead ---- */
 
 .lead-form {
     display: none;
     gap: 0.6rem;
     flex-wrap: wrap;
-    background: var(--panel);
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius);
     padding: 1rem;
     margin-bottom: 1.5rem;
+    animation: fadeInUp 0.25s ease;
 }
 .lead-form.open { display: flex; }
 .lead-form input {
-    background: var(--panel-2);
+    background: var(--input);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.5rem 0.8rem;
-    color: var(--text);
+    border-radius: 10px;
+    padding: 0.55rem 0.8rem;
+    color: var(--foreground);
+    font-family: inherit;
     font-size: 0.9rem;
+    transition: border-color 0.15s ease;
 }
+.lead-form input:focus { outline: none; border-color: var(--primary); }
+
+/* ---- Kanban ---- */
 
 .kanban-board {
     display: flex;
@@ -133,23 +182,28 @@ code {
     padding-bottom: 1rem;
 }
 .kanban-col {
-    background: var(--panel);
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius);
     min-width: 270px;
     width: 270px;
     flex: none;
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - 260px);
+    transition: border-color 0.2s ease, background 0.2s ease;
 }
-.kanban-col.dragover { border-color: var(--accent-2); background: #1b2330; }
+.kanban-col.dragover {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 6%, var(--card));
+}
 .kanban-col h3 {
-    padding: 0.7rem 0.85rem;
+    padding: 0.75rem 0.9rem;
     font-size: 0.8rem;
-    color: var(--text);
-    font-weight: 600;
+    color: var(--foreground);
+    font-weight: 700;
     border-bottom: 1px solid var(--border);
+    margin: 0;
 }
 .kanban-cards {
     min-height: 80px;
@@ -160,94 +214,106 @@ code {
     gap: 0.5rem;
 }
 .kanban-card {
-    background: var(--panel-2);
+    background: var(--muted);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 0.6rem 0.7rem;
+    padding: 0.65rem 0.75rem;
     cursor: grab;
     font-size: 0.85rem;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+    animation: fadeInUp 0.25s ease;
 }
+.kanban-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
 .kanban-card:active { cursor: grabbing; }
 .kanban-card.dragging { opacity: 0.4; }
-.kanban-card strong { color: var(--text); }
-.kanban-card small { color: var(--muted); }
+.kanban-card strong { color: var(--foreground); }
+.kanban-card small { color: var(--muted-foreground); }
 
 /* ---- Painel de Intencao de Prospeccao ---- */
 
 .intencao-bar {
     display: flex;
-    gap: 1.5rem;
+    gap: 1.8rem;
     flex-wrap: wrap;
-    background: var(--panel);
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 0.7rem 1.2rem;
+    border-radius: var(--radius);
+    padding: 0.8rem 1.3rem;
     margin-bottom: 1.5rem;
     transition: border-color 0.3s, background 0.3s;
 }
 .intencao-item { display: flex; flex-direction: column; gap: 0.15rem; }
-.intencao-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
-.intencao-value { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.intencao-label { font-size: 0.7rem; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.05em; }
+.intencao-value { font-size: 1.15rem; font-weight: 700; color: var(--foreground); }
 .intencao-value input {
     width: 3.5rem;
-    background: var(--panel-2);
+    background: var(--input);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
+    border-radius: 8px;
+    color: var(--foreground);
+    font-family: inherit;
     font-size: 1rem;
     font-weight: 700;
     padding: 0.1rem 0.4rem;
 }
+.intencao-value input:focus { outline: none; border-color: var(--primary); }
 
-.intencao-bar.ok { border-color: var(--accent); }
-.intencao-bar.warn { border-color: var(--warn); background: #201a10; }
-.intencao-bar.warn #intencao-tempo { color: var(--warn); }
-.intencao-bar.danger { border-color: var(--danger); background: #241213; }
-.intencao-bar.danger #intencao-tempo { color: var(--danger); animation: pulse-danger 1.5s infinite; }
+.intencao-bar.ok { border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); }
+.intencao-bar.warn { border-color: var(--caution); background: #201a10; }
+.intencao-bar.warn #intencao-tempo { color: var(--caution); }
+.intencao-bar.danger { border-color: var(--destructive); background: #241213; }
+.intencao-bar.danger #intencao-tempo { color: var(--destructive); animation: pulse-danger 1.5s infinite; }
 
 @keyframes pulse-danger {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
 }
 
+/* ---- Atividade / WhatsApp ---- */
+
 .btn-log-atividade {
     margin-top: 8px;
     width: 100%;
-    background: var(--panel);
+    background: transparent;
     border: 1px dashed var(--border);
-    color: var(--muted);
-    border-radius: 6px;
-    padding: 0.3rem;
+    color: var(--muted-foreground);
+    border-radius: 8px;
+    padding: 0.35rem;
+    font-family: inherit;
     font-size: 0.75rem;
     cursor: pointer;
+    transition: all 0.15s ease;
 }
-.btn-log-atividade:hover { border-color: var(--accent-2); color: var(--text); }
+.btn-log-atividade:hover { border-color: var(--primary); border-style: solid; color: var(--foreground); }
 
 .atividade-form {
     margin-top: 8px;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-    background: var(--panel);
+    background: var(--background);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 0.5rem;
+    animation: fadeInUp 0.2s ease;
 }
 .atividade-form select {
-    background: var(--panel-2);
+    background: var(--input);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
+    border-radius: 8px;
+    color: var(--foreground);
+    font-family: inherit;
     font-size: 0.75rem;
-    padding: 0.3rem;
+    padding: 0.35rem;
 }
 .atividade-form .btn-primary { margin: 0; padding: 0.4rem; font-size: 0.75rem; }
 
 .tags { margin-top: 6px; display: flex; gap: 5px; flex-wrap: wrap; }
 .tag {
     font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 5px;
-    background: #2a3140;
-    color: var(--muted);
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+    font-weight: 600;
 }
