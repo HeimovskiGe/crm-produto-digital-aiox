@@ -32,6 +32,7 @@
             <button class="nav-btn active" onclick="showTab('dashboard')">Dashboard</button>
             <button class="nav-btn" onclick="showTab('leads')">Leads</button>
             <button class="nav-btn" onclick="showTab('empresarios')">Empresarios</button>
+            <button class="nav-btn" onclick="showTab('config')">Configuracoes</button>
         </nav>
 
         <main class="main">
@@ -81,6 +82,24 @@
                 </p>
                 <div id="fonte-selector" class="nav" style="margin-bottom:1rem;"></div>
                 <div id="empresarios-board" class="kanban-board"></div>
+            </section>
+
+            <!-- Configuracoes (produto/oferta, usado no roteiro dos 7 Passos) -->
+            <section id="tab-config" class="tab-content">
+                <h2>Configuracoes &mdash; Seu Produto</h2>
+                <p style="color:var(--muted-foreground); font-size:0.85rem; margin-bottom:0.8rem;">
+                    Usado pra personalizar o roteiro de perguntas dos 7 Passos (Showtime e Fechamento) com a sua oferta de verdade.
+                </p>
+                <form id="produto-form" class="lead-form open" style="max-width:600px;" onsubmit="saveProduto(event)">
+                    <input name="nome_produto" placeholder="Nome do produto/oferta" style="width:100%;">
+                    <textarea name="proposta_valor" placeholder="Proposta de valor (o que a pessoa ganha)" style="width:100%; min-height:60px; background:var(--input); border:1px solid var(--border); border-radius:10px; padding:0.55rem 0.8rem; color:var(--foreground); font-family:inherit; font-size:0.9rem;"></textarea>
+                    <textarea name="dor_resolvida" placeholder="Dor que o produto resolve" style="width:100%; min-height:60px; background:var(--input); border:1px solid var(--border); border-radius:10px; padding:0.55rem 0.8rem; color:var(--foreground); font-family:inherit; font-size:0.9rem;"></textarea>
+                    <input name="entregavel_1" placeholder="Entregavel-chave 1" style="width:100%;">
+                    <input name="entregavel_2" placeholder="Entregavel-chave 2" style="width:100%;">
+                    <input name="entregavel_3" placeholder="Entregavel-chave 3" style="width:100%;">
+                    <input name="faixa_preco" placeholder="Faixa de preco (ex: R$ 5.000)" style="width:100%;">
+                    <button type="submit" class="btn-primary" style="width:100%;">Salvar</button>
+                </form>
             </section>
         </main>
     </div>

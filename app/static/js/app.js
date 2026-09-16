@@ -183,6 +183,16 @@ function renderKanban() {
             });
             card.appendChild(logBtn);
 
+            var reuniaoBtn = document.createElement('button');
+            reuniaoBtn.type = 'button';
+            reuniaoBtn.className = 'btn-log-atividade';
+            reuniaoBtn.textContent = '📋 Reuniao / Roteiro';
+            reuniaoBtn.addEventListener('click', function(ev) {
+                ev.stopPropagation();
+                toggleReuniaoPanel(lead.id, card);
+            });
+            card.appendChild(reuniaoBtn);
+
             cardsEl.appendChild(card);
         });
 
@@ -417,6 +427,20 @@ function renderEmpresariosBoard() {
                 card.appendChild(waLink);
             }
 
+            var prospectarBtn = document.createElement('button');
+            prospectarBtn.type = 'button';
+            prospectarBtn.className = 'btn-primary';
+            prospectarBtn.style.width = '100%';
+            prospectarBtn.style.marginTop = '6px';
+            prospectarBtn.style.marginBottom = '0';
+            prospectarBtn.style.fontSize = '0.75rem';
+            prospectarBtn.style.padding = '0.35rem';
+            prospectarBtn.textContent = '+ Prospectar';
+            prospectarBtn.addEventListener('click', function() {
+                prospectarEmpresario(fonteAtual, item, prospectarBtn);
+            });
+            card.appendChild(prospectarBtn);
+
             cardsEl.appendChild(card);
         });
 
@@ -455,3 +479,212 @@ async function onDropEmp(e) {
 }
 
 document.addEventListener('DOMContentLoaded', loadFontes);
+
+/* ---- Configuracoes (produto/oferta) ---- */
+
+async function loadProduto() {
+    var form = document.getElementById('produto-form');
+    if (!form) return;
+    var resp = await fetch('/api/produto');
+    if (!resp.ok) return;
+    var data = await resp.json();
+    Object.keys(data).forEach(function(key) {
+        if (form.elements[key] && data[key] != null) {
+            form.elements[key].value = data[key];
+        }
+    });
+}
+
+async function saveProduto(event) {
+    event.preventDefault();
+    var form = event.target;
+    var payload = {
+        nome_produto: form.nome_produto.value || null,
+        proposta_valor: form.proposta_valor.value || null,
+        dor_resolvida: form.dor_resolvida.value || null,
+        entregavel_1: form.entregavel_1.value || null,
+        entregavel_2: form.entregavel_2.value || null,
+        entregavel_3: form.entregavel_3.value || null,
+        faixa_preco: form.faixa_preco.value || null
+    };
+    var resp = await fetch('/api/produto', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    if (resp.ok) alert('Produto salvo.');
+}
+
+document.addEventListener('DOMContentLoaded', loadProduto);
+
+/* ---- Prospectar (Empresario -> Lead real) ---- */
+
+async function prospectarEmpresario(fonte, item, btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = 'Prospectando...';
+    var resp = await fetch('/api/empresarios/' + fonte + '/' + item.id + '/prospectar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            nome_fantasia: item.nome_fantasia,
+            razao_social: item.razao_social,
+            telefone: item.telefone,
+            whatsapp: item.whatsapp,
+            email: item.email,
+            municipio: item.municipio,
+            cnae: item.cnae
+        })
+    });
+    if (resp.ok) {
+        btnEl.textContent = '✓ Em Leads';
+        reloadFonteAtual();
+        loadLeads();
+    } else {
+        btnEl.disabled = false;
+        btnEl.textContent = '+ Prospectar';
+    }
+}
+
+/* ---- Reuniao de Venda (7 Passos) - painel no card do Lead ---- */
+
+var ETAPA_REUNIAO_ORDEM = ['apresentacao', 'conexao', 'decisao_imediata', 'showtime', 'fechamento', 'referidos', 'validacao'];
+
+async function toggleReuniaoPanel(leadId, card) {
+    var existing = card.querySelector('.reuniao-panel');
+    if (existing) { existing.remove(); return; }
+
+    var panel = document.createElement('div');
+    panel.className = 'reuniao-panel';
+    panel.textContent = 'Carregando...';
+    card.appendChild(panel);
+
+    var roteiroResp = await fetch('/api/leads/' + leadId + '/roteiro');
+    var roteiro = await roteiroResp.json();
+
+    var reuniaoResp = await fetch('/api/leads/' + leadId + '/reunioes/atual');
+    var reuniao = reuniaoResp.ok ? await reuniaoResp.json() : null;
+
+    renderReuniaoPanel(panel, leadId, roteiro, reuniao);
+}
+
+function renderReuniaoPanel(panel, leadId, roteiro, reuniao) {
+    panel.innerHTML = '';
+
+    if (!reuniao) {
+        var startBtn = document.createElement('button');
+        startBtn.type = 'button';
+        startBtn.className = 'btn-primary';
+        startBtn.style.width = '100%';
+        startBtn.textContent = '▶ Iniciar Reuniao de Venda';
+        startBtn.addEventListener('click', async function() {
+            var resp = await fetch('/api/leads/' + leadId + '/reunioes', { method: 'POST' });
+            var novaReuniao = await resp.json();
+            await loadLeads();
+            renderReuniaoPanel(panel, leadId, roteiro, novaReuniao);
+        });
+        panel.appendChild(startBtn);
+        return;
+    }
+
+    var nav = document.createElement('div');
+    nav.className = 'etapa-nav';
+    ETAPA_REUNIAO_ORDEM.forEach(function(etapaKey, idx) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'etapa-btn' + (etapaKey === reuniao.etapa_atual ? ' active' : '');
+        btn.textContent = idx + 1;
+        btn.title = etapaKey;
+        btn.addEventListener('click', async function() {
+            var resp = await fetch('/api/reunioes/' + reuniao.id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ etapa_atual: etapaKey })
+            });
+            var atualizada = await resp.json();
+            renderReuniaoPanel(panel, leadId, roteiro, atualizada);
+        });
+        nav.appendChild(btn);
+    });
+    panel.appendChild(nav);
+
+    var passoAtual = roteiro.find(function(p) { return p.etapa === reuniao.etapa_atual; });
+    if (passoAtual) {
+        var titulo = document.createElement('strong');
+        titulo.textContent = passoAtual.titulo;
+        panel.appendChild(titulo);
+
+        var objetivo = document.createElement('p');
+        objetivo.className = 'roteiro-objetivo';
+        objetivo.textContent = passoAtual.objetivo;
+        panel.appendChild(objetivo);
+
+        var lista = document.createElement('ul');
+        lista.className = 'roteiro-perguntas';
+        passoAtual.perguntas.forEach(function(p) {
+            var li = document.createElement('li');
+            li.textContent = p;
+            lista.appendChild(li);
+        });
+        panel.appendChild(lista);
+    }
+
+    if (reuniao.etapa_atual === 'decisao_imediata' && !reuniao.di_confirmada) {
+        var diBtn = document.createElement('button');
+        diBtn.type = 'button';
+        diBtn.className = 'btn-primary';
+        diBtn.style.width = '100%';
+        diBtn.textContent = 'Confirmar DI (topou sim/nao no final)';
+        diBtn.addEventListener('click', async function() {
+            var resp = await fetch('/api/reunioes/' + reuniao.id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ di_confirmada: true })
+            });
+            var atualizada = await resp.json();
+            renderReuniaoPanel(panel, leadId, roteiro, atualizada);
+        });
+        panel.appendChild(diBtn);
+    }
+
+    if (!reuniao.resultado) {
+        var fecharRow = document.createElement('div');
+        fecharRow.className = 'fechar-row';
+
+        var valorInput = document.createElement('input');
+        valorInput.type = 'number';
+        valorInput.placeholder = 'Valor fechado';
+
+        var ganhoBtn = document.createElement('button');
+        ganhoBtn.type = 'button';
+        ganhoBtn.className = 'btn-primary';
+        ganhoBtn.textContent = '✓ Ganho';
+        ganhoBtn.addEventListener('click', async function() {
+            await fetch('/api/reunioes/' + reuniao.id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resultado: 'ganho', valor_fechado: parseFloat(valorInput.value) || null })
+            });
+            await loadLeads();
+            panel.remove();
+        });
+
+        var perdidoBtn = document.createElement('button');
+        perdidoBtn.type = 'button';
+        perdidoBtn.className = 'btn-secondary';
+        perdidoBtn.textContent = '✗ Perdido';
+        perdidoBtn.addEventListener('click', async function() {
+            await fetch('/api/reunioes/' + reuniao.id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resultado: 'perdido' })
+            });
+            await loadLeads();
+            panel.remove();
+        });
+
+        fecharRow.appendChild(valorInput);
+        fecharRow.appendChild(ganhoBtn);
+        fecharRow.appendChild(perdidoBtn);
+        panel.appendChild(fecharRow);
+    }
+}

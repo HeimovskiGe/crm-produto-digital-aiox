@@ -5,9 +5,12 @@ server-side). Cada fonte usa o proprio vocabulario de status que ja existe
 la (novo/contatado/respondeu/negociando/fechado/perdido) - nao usa
 etapa_processo nem pipeline_stage deste CRM.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.database import get_db
+from app.models.lead import EtapaProcesso, Lead
 from app.services.pamgeh_client import pamgeh_client
 
 router = APIRouter(prefix="/api/empresarios", tags=["empresarios"])
@@ -39,6 +42,16 @@ class StatusUpdate(BaseModel):
     status: str
 
 
+class ProspectarPayload(BaseModel):
+    nome_fantasia: str | None = None
+    razao_social: str | None = None
+    telefone: str | None = None
+    whatsapp: str | None = None
+    email: str | None = None
+    municipio: str | None = None
+    cnae: str | None = None
+
+
 def _table_or_404(fonte: str) -> str:
     if fonte not in FONTES:
         raise HTTPException(status_code=404, detail="Fonte desconhecida")
@@ -67,3 +80,36 @@ async def update_status(fonte: str, record_id: str, payload: StatusUpdate):
     table = _table_or_404(fonte)
     await pamgeh_client.update_status(table, record_id, payload.status)
     return {"ok": True}
+
+
+@router.post("/{fonte}/{record_id}/prospectar")
+async def prospectar(
+    fonte: str, record_id: str, payload: ProspectarPayload, db: AsyncSession = Depends(get_db)
+):
+    """Promove um empresario da fonte pra um Lead de verdade neste CRM,
+    pra poder rodar o funil (etapa_processo) e a Reuniao de Venda (7 Passos)
+    nele. Nao apaga nem duplica nada na fonte - so marca como 'contatado' la,
+    porque agora esta sendo trabalhado aqui."""
+    table = _table_or_404(fonte)
+    nome = payload.nome_fantasia or payload.razao_social or "(sem nome)"
+
+    lead = Lead(
+        nome=nome,
+        empresa=payload.razao_social,
+        telefone=payload.telefone or payload.whatsapp,
+        email=payload.email,
+        territorio=payload.municipio,
+        vertical=payload.cnae,
+        origem=f"pam-geh:{fonte}",
+        etapa_processo=EtapaProcesso.PROSPECCAO,
+    )
+    db.add(lead)
+    await db.flush()
+    await db.refresh(lead)
+
+    try:
+        await pamgeh_client.update_status(table, record_id, "contatado")
+    except Exception:
+        pass  # lead ja foi criado; falha em marcar a fonte nao desfaz isso
+
+    return {"lead_id": lead.id}

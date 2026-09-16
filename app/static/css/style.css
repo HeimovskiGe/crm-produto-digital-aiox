@@ -317,3 +317,58 @@ code {
     color: var(--secondary-foreground);
     font-weight: 600;
 }
+
+/* ---- Reuniao de Venda / Roteiro dos 7 Passos ---- */
+
+.reuniao-panel {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.6rem;
+    animation: fadeInUp 0.2s ease;
+}
+.etapa-nav { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.etapa-btn {
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--muted);
+    color: var(--muted-foreground);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.etapa-btn:hover { border-color: var(--primary); }
+.etapa-btn.active { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+
+.roteiro-objetivo { font-size: 0.72rem; color: var(--muted-foreground); font-style: italic; }
+.roteiro-perguntas { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; }
+.roteiro-perguntas li {
+    font-size: 0.78rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.45rem 0.6rem;
+    line-height: 1.35;
+}
+
+.fechar-row { display: flex; gap: 0.35rem; align-items: center; }
+.fechar-row input {
+    flex: 1;
+    min-width: 0;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--foreground);
+    font-family: inherit;
+    font-size: 0.75rem;
+    padding: 0.35rem;
+}
+.fechar-row button { margin: 0; padding: 0.35rem 0.6rem; font-size: 0.75rem; white-space: nowrap; }

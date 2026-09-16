@@ -11,3 +11,4 @@ from app.models.atividade import AtividadeProspeccao
 from app.models.metrica_diaria import MetricaDiaria
 from app.models.reuniao_venda import ReuniaoVenda
 from app.models.referido import Referido
+from app.models.produto import ConfiguracaoProduto
