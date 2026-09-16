@@ -312,3 +312,146 @@ document.addEventListener('DOMContentLoaded', async function() {
     await Promise.all([loadStages(), loadQualificacao()]);
     await loadLeads();
 });
+
+/* ---- Empresarios (bases pam-geh - sem migrar, direto na fonte) ---- */
+
+var fontesCache = [];
+var statusColumnsCache = [];
+var fonteAtual = null;
+var empresariosPorStatus = {};
+
+async function loadFontes() {
+    var fontesResp = await fetch('/api/empresarios/meta/fontes');
+    fontesCache = await fontesResp.json();
+    var statusResp = await fetch('/api/empresarios/meta/status');
+    statusColumnsCache = await statusResp.json();
+
+    var selector = document.getElementById('fonte-selector');
+    if (!selector) return;
+    selector.innerHTML = '';
+    fontesCache.forEach(function(f, idx) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'nav-btn' + (idx === 0 ? ' active' : '');
+        btn.textContent = f.label;
+        btn.addEventListener('click', function() { selectFonte(f.value, btn); });
+        selector.appendChild(btn);
+    });
+    if (fontesCache.length) selectFonte(fontesCache[0].value, selector.firstChild);
+}
+
+function selectFonte(fonte, btnEl) {
+    fonteAtual = fonte;
+    document.querySelectorAll('#fonte-selector .nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (btnEl) btnEl.classList.add('active');
+    reloadFonteAtual();
+}
+
+function reloadFonteAtual() {
+    empresariosPorStatus = {};
+    statusColumnsCache.forEach(function(s) { empresariosPorStatus[s.value] = { items: [], total: 0, offset: 0 }; });
+    renderEmpresariosBoard();
+    statusColumnsCache.forEach(function(s) { loadEmpresariosColuna(s.value); });
+}
+
+async function loadEmpresariosColuna(status) {
+    var state = empresariosPorStatus[status];
+    var resp = await fetch('/api/empresarios/' + fonteAtual + '?status=' + status + '&limit=30&offset=' + state.offset);
+    if (!resp.ok) return;
+    var data = await resp.json();
+    state.items = state.items.concat(data.items);
+    state.total = data.total;
+    state.offset = state.items.length;
+    renderEmpresariosBoard();
+}
+
+function renderEmpresariosBoard() {
+    var board = document.getElementById('empresarios-board');
+    if (!board) return;
+    board.innerHTML = '';
+
+    statusColumnsCache.forEach(function(statusCol) {
+        var state = empresariosPorStatus[statusCol.value] || { items: [], total: 0 };
+
+        var col = document.createElement('div');
+        col.className = 'kanban-col';
+        col.dataset.stage = statusCol.value;
+        col.addEventListener('dragover', onDragOver);
+        col.addEventListener('dragleave', onDragLeave);
+        col.addEventListener('drop', onDropEmp);
+
+        var header = document.createElement('h3');
+        header.textContent = statusCol.label + ' (' + state.total + ')';
+        col.appendChild(header);
+
+        var cardsEl = document.createElement('div');
+        cardsEl.className = 'kanban-cards';
+
+        state.items.forEach(function(item) {
+            var card = document.createElement('div');
+            card.className = 'kanban-card';
+            card.draggable = true;
+            card.dataset.empId = item.id;
+            card.addEventListener('dragstart', onDragStartEmp);
+            card.addEventListener('dragend', onDragEnd);
+
+            var nome = document.createElement('strong');
+            nome.textContent = item.razao_social || item.nome_fantasia || '(sem nome)';
+            card.appendChild(nome);
+
+            var meta = document.createElement('small');
+            meta.textContent = [item.telefone, item.municipio].filter(Boolean).join(' · ');
+            card.appendChild(document.createElement('br'));
+            card.appendChild(meta);
+
+            if (item.whatsapp) {
+                var waLink = document.createElement('a');
+                waLink.href = 'https://wa.me/' + item.whatsapp;
+                waLink.target = '_blank';
+                waLink.rel = 'noopener';
+                waLink.className = 'btn-log-atividade';
+                waLink.style.display = 'block';
+                waLink.style.textAlign = 'center';
+                waLink.style.textDecoration = 'none';
+                waLink.textContent = '💬 WhatsApp';
+                card.appendChild(waLink);
+            }
+
+            cardsEl.appendChild(card);
+        });
+
+        if (state.items.length < state.total) {
+            var moreBtn = document.createElement('button');
+            moreBtn.type = 'button';
+            moreBtn.className = 'btn-secondary';
+            moreBtn.style.width = '100%';
+            moreBtn.style.marginTop = '0.5rem';
+            moreBtn.textContent = 'Carregar mais (' + state.items.length + '/' + state.total + ')';
+            moreBtn.addEventListener('click', function() { loadEmpresariosColuna(statusCol.value); });
+            cardsEl.appendChild(moreBtn);
+        }
+
+        col.appendChild(cardsEl);
+        board.appendChild(col);
+    });
+}
+
+function onDragStartEmp(e) {
+    e.dataTransfer.setData('text/plain', e.target.dataset.empId);
+    e.target.classList.add('dragging');
+}
+
+async function onDropEmp(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
+    var empId = e.dataTransfer.getData('text/plain');
+    var newStatus = e.currentTarget.dataset.stage;
+    await fetch('/api/empresarios/' + fonteAtual + '/' + empId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+    });
+    reloadFonteAtual();
+}
+
+document.addEventListener('DOMContentLoaded', loadFontes);

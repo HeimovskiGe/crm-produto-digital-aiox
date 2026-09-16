@@ -31,6 +31,7 @@
         <nav class="nav">
             <button class="nav-btn active" onclick="showTab('dashboard')">Dashboard</button>
             <button class="nav-btn" onclick="showTab('leads')">Leads</button>
+            <button class="nav-btn" onclick="showTab('empresarios')">Empresarios</button>
         </nav>
 
         <main class="main">
@@ -70,6 +71,16 @@
                     <button type="button" class="btn-secondary" onclick="toggleNewLeadForm(false)">Cancelar</button>
                 </form>
                 <div id="kanban-board" class="kanban-board"></div>
+            </section>
+
+            <!-- Empresarios (bases pam-geh, direto na fonte) -->
+            <section id="tab-empresarios" class="tab-content">
+                <h2>Empresarios &mdash; Bases Scraped (pam-geh)</h2>
+                <p style="color:var(--muted); font-size:0.85rem; margin-bottom:0.8rem;">
+                    Dados ao vivo do banco original (Receita Federal + Google Meu Negocio). Nada e migrado - mover um card aqui atualiza a fonte direto.
+                </p>
+                <div id="fonte-selector" class="nav" style="margin-bottom:1rem;"></div>
+                <div id="empresarios-board" class="kanban-board"></div>
             </section>
         </main>
     </div>

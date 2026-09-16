@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     # OpenAI (opcional)
     openai_api_key: str = ""
 
+    # Supabase do pam-geh (bancos de empresarios ja scraped - leitura/escrita
+    # direto na fonte, sem migrar nada pra este projeto)
+    pamgeh_supabase_url: str = ""
+    pamgeh_service_role_key: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
