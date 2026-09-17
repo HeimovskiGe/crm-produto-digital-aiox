@@ -191,6 +191,10 @@ function renderKanban() {
             card.dataset.leadId = lead.id;
             card.addEventListener('dragstart', onDragStart);
             card.addEventListener('dragend', onDragEnd);
+            card.addEventListener('click', function(ev) {
+                if (ev.target.closest('button, select, input, a')) return;
+                openLeadModal(lead.id);
+            });
 
             var nome = document.createElement('strong');
             nome.textContent = lead.nome;
