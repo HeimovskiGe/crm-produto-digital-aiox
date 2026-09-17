@@ -184,6 +184,7 @@ function renderKanban() {
         cardsEl.className = 'kanban-cards';
 
         leadsInEtapa.forEach(function(lead) {
+          try {
             var card = document.createElement('div');
             card.className = 'kanban-card';
             card.draggable = true;
@@ -243,6 +244,9 @@ function renderKanban() {
             card.appendChild(moverSelect);
 
             cardsEl.appendChild(card);
+          } catch (e) {
+            console.error('Erro ao renderizar lead ' + lead.id, e);
+          }
         });
 
         col.appendChild(cardsEl);
@@ -660,14 +664,30 @@ async function openLeadModal(leadId) {
     box.innerHTML = 'Carregando...';
     modal.classList.add('open');
 
-    var lead = leadsCache.find(function(l) { return l.id === leadId; });
-    var roteiroResp = await fetch('/api/leads/' + leadId + '/roteiro');
-    var roteiro = await roteiroResp.json();
-    var reuniaoResp = await fetch('/api/leads/' + leadId + '/reunioes/atual');
-    var reuniao = reuniaoResp.ok ? await reuniaoResp.json() : null;
+    try {
+        var lead = leadsCache.find(function(l) { return l.id === leadId; });
+        var roteiroResp = await fetch('/api/leads/' + leadId + '/roteiro');
+        if (!roteiroResp.ok) throw new Error('roteiro respondeu ' + roteiroResp.status);
+        var roteiro = await roteiroResp.json();
+        var reuniaoResp = await fetch('/api/leads/' + leadId + '/reunioes/atual');
+        var reuniao = reuniaoResp.ok ? await reuniaoResp.json() : null;
 
-    modalState = { leadId: leadId, lead: lead, roteiro: roteiro, reuniao: reuniao };
-    await renderLeadModal();
+        modalState = { leadId: leadId, lead: lead, roteiro: roteiro, reuniao: reuniao };
+        await renderLeadModal();
+    } catch (e) {
+        console.error('Erro ao abrir modal do lead ' + leadId, e);
+        box.innerHTML = '';
+        var err = document.createElement('p');
+        err.style.color = 'var(--destructive)';
+        err.textContent = 'Erro ao carregar este lead: ' + (e && e.message ? e.message : e);
+        box.appendChild(err);
+        var closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'btn-secondary';
+        closeBtn.textContent = 'Fechar';
+        closeBtn.addEventListener('click', closeLeadModal);
+        box.appendChild(closeBtn);
+    }
 }
 
 function leadInfoItem(label, value, link) {
