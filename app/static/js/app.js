@@ -96,6 +96,43 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(loadIntencao, 30000);
 });
 
+/* ---- Rotulo legivel pro CNAE (raw code nao diz nada sobre "quem e" o lead) ----
+   Cobre os CNAEs mais frequentes nas bases do pam-geh (~75% dos leads
+   amostrados); o que nao estiver aqui cai no fallback (mostra o codigo cru).
+   Fonte: IBGE/Concla - descricoes oficiais das subclasses CNAE 2.0/2.3. */
+var CNAE_LABELS = {
+    '4781-4/00': 'Comercio varejista de artigos do vestuario e acessorios',
+    '9602-5/01': 'Cabeleireiros, manicure e pedicure',
+    '9602-5/02': 'Estetica e outros cuidados de beleza',
+    '9491000': 'Organizacao religiosa ou filosofica',
+    '1091-1/02': 'Padaria e confeitaria (producao propria)',
+    '3101-2/00': 'Fabricacao de moveis de madeira',
+    '2539-0/01': 'Usinagem, tornearia e solda',
+    '1412-6/01': 'Confeccao de vestuario (serie)',
+    '4399-1/03': 'Obras de alvenaria',
+    '1412-6/02': 'Confeccao de vestuario sob medida',
+    '2542-0/00': 'Serralheria (exceto esquadrias)',
+    '0161-0/03': 'Preparacao de terreno, cultivo e colheita',
+    '2512-8/00': 'Fabricacao de esquadrias de metal',
+    '4930-2/02': 'Transporte rodoviario de carga',
+    '7319-0/02': 'Promocao de vendas',
+    '5611-2/03': 'Lanchonete, casa de sucos/cha',
+    '1359-6/00': 'Fabricacao de outros produtos texteis',
+    '1091-1/01': 'Panificacao industrial',
+    '4520-0/01': 'Manutencao e reparacao mecanica de veiculos',
+    '5611-2/04': 'Bar (sem entretenimento)',
+    '4530-7/03': 'Comercio de pecas/acessorios de veiculos',
+    '2391-5/03': 'Trabalhos em marmore, granito e outras pedras',
+    '4321-5/00': 'Instalacao e manutencao eletrica',
+    '4712-1/00': 'Minimercado, mercearia ou armazem',
+    '2342-7/02': 'Fabricacao de ceramica/barro pra construcao',
+};
+
+function cnaeLabel(code) {
+    if (!code) return null;
+    return CNAE_LABELS[code] || code;
+}
+
 /* ---- Kanban de Leads (funil operacional - aulas Lucas Carmo) ---- */
 
 var etapasCache = [];
@@ -158,11 +195,20 @@ function renderKanban() {
             nome.textContent = lead.nome;
             card.appendChild(nome);
 
-            if (lead.empresa) {
+            if (lead.empresa && lead.empresa !== lead.nome) {
                 var empresa = document.createElement('small');
                 empresa.textContent = lead.empresa;
                 card.appendChild(document.createElement('br'));
                 card.appendChild(empresa);
+            }
+
+            var metaPartes = [lead.territorio, cnaeLabel(lead.vertical), lead.telefone].filter(Boolean);
+            if (metaPartes.length) {
+                var meta = document.createElement('small');
+                meta.className = 'card-meta';
+                meta.textContent = metaPartes.join(' · ');
+                card.appendChild(document.createElement('br'));
+                card.appendChild(meta);
             }
 
             var tag = document.createElement('div');
@@ -435,7 +481,9 @@ function renderEmpresariosBoard() {
             card.appendChild(nome);
 
             var meta = document.createElement('small');
-            meta.textContent = [item.telefone, item.municipio].filter(Boolean).join(' · ');
+            meta.className = 'card-meta';
+            var localParte = [item.bairro, item.municipio].filter(Boolean).join(', ');
+            meta.textContent = [item.telefone, localParte, cnaeLabel(item.cnae)].filter(Boolean).join(' · ');
             card.appendChild(document.createElement('br'));
             card.appendChild(meta);
 
@@ -581,6 +629,7 @@ async function prospectarEmpresario(fonte, item, btnEl) {
             whatsapp: item.whatsapp,
             email: item.email,
             municipio: item.municipio,
+            bairro: item.bairro,
             cnae: item.cnae
         })
     });
@@ -673,7 +722,7 @@ async function renderLeadModal() {
         grid.appendChild(leadInfoItem('Telefone', lead.telefone, waLink));
         grid.appendChild(leadInfoItem('E-mail', lead.email));
         grid.appendChild(leadInfoItem('Territorio', lead.territorio));
-        grid.appendChild(leadInfoItem('Vertical', lead.vertical));
+        grid.appendChild(leadInfoItem('Vertical', cnaeLabel(lead.vertical)));
         grid.appendChild(leadInfoItem('Qualificacao', qualificacaoLabel(lead.pipeline_stage)));
         grid.appendChild(leadInfoItem('Tentativas de contato', String(lead.tentativas_contato)));
         box.appendChild(grid);

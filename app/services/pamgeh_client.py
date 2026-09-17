@@ -10,7 +10,7 @@ import httpx
 
 from app.config import settings
 
-SELECT_FIELDS = "id,nome_fantasia,razao_social,telefone,whatsapp,email,status,municipio,cnae,created_at"
+SELECT_FIELDS = "id,nome_fantasia,razao_social,telefone,whatsapp,email,status,municipio,bairro,cnae,created_at"
 
 
 class PamGehClient:

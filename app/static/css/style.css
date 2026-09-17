@@ -228,6 +228,7 @@ code {
 .kanban-card.dragging { opacity: 0.4; }
 .kanban-card strong { color: var(--foreground); }
 .kanban-card small { color: var(--muted-foreground); }
+.kanban-card small.card-meta { display: block; font-size: 0.72rem; line-height: 1.35; margin-top: 2px; }
 
 /* ---- Painel de Intencao de Prospeccao ---- */
 

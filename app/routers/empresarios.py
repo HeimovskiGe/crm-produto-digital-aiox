@@ -49,6 +49,7 @@ class ProspectarPayload(BaseModel):
     whatsapp: str | None = None
     email: str | None = None
     municipio: str | None = None
+    bairro: str | None = None
     cnae: str | None = None
 
 
@@ -92,13 +93,14 @@ async def prospectar(
     porque agora esta sendo trabalhado aqui."""
     table = _table_or_404(fonte)
     nome = payload.nome_fantasia or payload.razao_social or "(sem nome)"
+    territorio = ", ".join(filter(None, [payload.bairro, payload.municipio])) or None
 
     lead = Lead(
         nome=nome,
         empresa=payload.razao_social,
         telefone=payload.telefone or payload.whatsapp,
         email=payload.email,
-        territorio=payload.municipio,
+        territorio=territorio,
         vertical=payload.cnae,
         origem=f"pam-geh:{fonte}",
         etapa_processo=EtapaProcesso.PROSPECCAO,
