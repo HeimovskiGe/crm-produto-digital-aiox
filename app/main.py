@@ -15,7 +15,7 @@ from app.config import settings
 from app.database import init_db
 
 # Routers (descomentar conforme implementar)
-from app.routers import empresarios, health, leads, produto, prospeccao, referidos, reunioes
+from app.routers import agenda, empresarios, health, leads, produto, prospeccao, referidos, reunioes
 # from app.routers import webhooks
 # from app.routers import customers
 # from app.routers import orders
@@ -62,6 +62,7 @@ app.include_router(empresarios.router)
 app.include_router(produto.router)
 app.include_router(reunioes.router)
 app.include_router(referidos.router)
+app.include_router(agenda.router)
 # app.include_router(webhooks.router)
 # app.include_router(customers.router)
 # app.include_router(orders.router)

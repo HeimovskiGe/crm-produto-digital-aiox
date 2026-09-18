@@ -622,6 +622,56 @@ async function saveProduto(event) {
 
 document.addEventListener('DOMContentLoaded', loadProduto);
 
+/* ---- Google Calendar (horarios livres pra agendar Reuniao de Venda) ---- */
+
+async function loadAgendaStatus() {
+    var container = document.getElementById('agenda-status');
+    if (!container) return;
+    container.innerHTML = 'Carregando...';
+    var resp = await fetch('/api/agenda/status');
+    var data = await resp.json();
+    container.innerHTML = '';
+
+    if (data.conectado) {
+        var msg = document.createElement('p');
+        msg.style.color = 'var(--primary)';
+        msg.style.marginBottom = '0.5rem';
+        msg.textContent = '✓ Conectado';
+        container.appendChild(msg);
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-secondary';
+        btn.textContent = 'Desconectar';
+        btn.addEventListener('click', async function() {
+            await fetch('/api/agenda/desconectar', { method: 'POST' });
+            await loadAgendaStatus();
+        });
+        container.appendChild(btn);
+    } else {
+        var link = document.createElement('a');
+        link.href = '/api/agenda/conectar';
+        link.className = 'btn-primary';
+        link.style.display = 'inline-block';
+        link.style.textDecoration = 'none';
+        link.textContent = 'Conectar Google Calendar';
+        container.appendChild(link);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadAgendaStatus();
+    var params = new URLSearchParams(window.location.search);
+    if (params.has('agenda')) {
+        if (params.get('agenda') === 'conectado') {
+            alert('Google Calendar conectado.');
+        } else {
+            alert('Erro ao conectar Google Calendar: ' + (params.get('motivo') || 'desconhecido'));
+        }
+        history.replaceState({}, '', window.location.pathname);
+    }
+});
+
 /* ---- Prospectar (Empresario -> Lead real) ---- */
 
 async function prospectarEmpresario(fonte, item, btnEl) {
@@ -712,6 +762,92 @@ function leadInfoItem(label, value, link) {
     return d;
 }
 
+async function renderAgendaSection(box, leadId) {
+    var wrap = document.createElement('div');
+    wrap.style.marginBottom = '1rem';
+
+    var toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'btn-secondary';
+    toggleBtn.style.width = '100%';
+    toggleBtn.textContent = '📅 Agendar Reuniao (ver horarios livres)';
+
+    var slotsWrap = document.createElement('div');
+    slotsWrap.style.display = 'none';
+    slotsWrap.style.marginTop = '0.5rem';
+
+    toggleBtn.addEventListener('click', async function() {
+        var abrindo = slotsWrap.style.display === 'none';
+        slotsWrap.style.display = abrindo ? 'block' : 'none';
+        if (!abrindo) return;
+
+        slotsWrap.textContent = 'Carregando horarios...';
+        var statusResp = await fetch('/api/agenda/status');
+        var statusData = await statusResp.json();
+        if (!statusData.conectado) {
+            slotsWrap.innerHTML = '';
+            var msg = document.createElement('p');
+            msg.className = 'roteiro-objetivo';
+            msg.textContent = 'Conecte sua conta do Google em Configuracoes pra ver horarios livres.';
+            slotsWrap.appendChild(msg);
+            return;
+        }
+
+        var resp = await fetch('/api/agenda/horarios-livres?dias=3');
+        if (!resp.ok) {
+            slotsWrap.innerHTML = '';
+            var err = document.createElement('p');
+            err.style.color = 'var(--destructive)';
+            err.textContent = 'Erro ao buscar horarios livres.';
+            slotsWrap.appendChild(err);
+            return;
+        }
+        var slots = await resp.json();
+        slotsWrap.innerHTML = '';
+        if (!slots.length) {
+            slotsWrap.textContent = 'Nenhum horario livre encontrado nos proximos dias.';
+            return;
+        }
+
+        var lista = document.createElement('div');
+        lista.style.display = 'flex';
+        lista.style.flexWrap = 'wrap';
+        lista.style.gap = '0.4rem';
+        slots.slice(0, 24).forEach(function(slot) {
+            var slotBtn = document.createElement('button');
+            slotBtn.type = 'button';
+            slotBtn.className = 'btn-secondary';
+            slotBtn.style.margin = '0';
+            slotBtn.style.fontSize = '0.72rem';
+            var d = new Date(slot.inicio);
+            slotBtn.textContent = d.toLocaleString('pt-BR', {
+                weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
+            slotBtn.addEventListener('click', async function() {
+                slotBtn.disabled = true;
+                slotBtn.textContent = 'Agendando...';
+                var criarResp = await fetch('/api/agenda/eventos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lead_id: leadId, inicio: slot.inicio, fim: slot.fim })
+                });
+                if (criarResp.ok) {
+                    slotBtn.textContent = '✓ Agendado';
+                } else {
+                    slotBtn.disabled = false;
+                    slotBtn.textContent = 'Erro, tenta de novo';
+                }
+            });
+            lista.appendChild(slotBtn);
+        });
+        slotsWrap.appendChild(lista);
+    });
+
+    wrap.appendChild(toggleBtn);
+    wrap.appendChild(slotsWrap);
+    box.appendChild(wrap);
+}
+
 async function renderLeadModal() {
     var box = document.getElementById('lead-modal-box');
     box.innerHTML = '';
@@ -751,6 +887,8 @@ async function renderLeadModal() {
         grid.appendChild(leadInfoItem('Tentativas de contato', String(lead.tentativas_contato)));
         box.appendChild(grid);
     }
+
+    await renderAgendaSection(box, st.leadId);
 
     if (!st.reuniao) {
         var startBtn = document.createElement('button');

@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     pamgeh_supabase_url: str = ""
     pamgeh_service_role_key: str = ""
 
+    # Google Calendar (horarios livres pra agendar Reuniao de Venda)
+    app_base_url: str = "http://localhost:8000"
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
