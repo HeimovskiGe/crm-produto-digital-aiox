@@ -94,6 +94,12 @@ async def list_tags(fonte: str):
     return await pamgeh_client.list_distinct(table, "ia_tag")
 
 
+@router.get("/meta/{fonte}/cnaes")
+async def list_cnaes(fonte: str):
+    table = _table_or_404(fonte)
+    return await pamgeh_client.list_distinct(table, "cnae")
+
+
 @router.get("/{fonte}")
 async def list_por_status(
     fonte: str,
@@ -102,11 +108,12 @@ async def list_por_status(
     offset: int = 0,
     municipio: str | None = None,
     tag: str | None = None,
+    cnae: str | None = None,
 ):
     table = _table_or_404(fonte)
     items, total = await pamgeh_client.list_by_status(
         table, status, limit, offset,
-        municipio=municipio, tag=tag,
+        municipio=municipio, tag=tag, cnae=cnae,
         select_fields=_select_fields_for(fonte),
     )
     return {"items": items, "total": total}

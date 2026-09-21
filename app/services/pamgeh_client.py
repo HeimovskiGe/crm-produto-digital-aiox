@@ -35,6 +35,7 @@ class PamGehClient:
         offset: int,
         municipio: str | None = None,
         tag: str | None = None,
+        cnae: str | None = None,
         select_fields: str = SELECT_FIELDS,
     ) -> tuple[list[dict], int]:
         params = {
@@ -48,6 +49,8 @@ class PamGehClient:
             params["municipio"] = f"eq.{municipio}"
         if tag:
             params["ia_tag"] = f"eq.{tag}"
+        if cnae:
+            params["cnae"] = f"eq.{cnae}"
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(
                 f"{self.base_url}/rest/v1/{table}",

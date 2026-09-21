@@ -411,6 +411,7 @@ var fonteAtualMeta = null;
 var empresariosPorStatus = {};
 var empMunicipioFiltro = '';
 var empTagFiltro = '';
+var empCnaeFiltro = '';
 
 async function loadFontes() {
     var fontesResp = await fetch('/api/empresarios/meta/fontes');
@@ -439,8 +440,10 @@ function selectFonte(fonte, btnEl) {
     if (btnEl) btnEl.classList.add('active');
     empMunicipioFiltro = '';
     empTagFiltro = '';
+    empCnaeFiltro = '';
     document.getElementById('emp-municipio-filter').value = '';
     document.getElementById('emp-tag-filter').value = '';
+    document.getElementById('emp-cnae-filter').value = '';
     loadEmpresarioFiltros();
     reloadFonteAtual();
 }
@@ -448,7 +451,8 @@ function selectFonte(fonte, btnEl) {
 async function loadEmpresarioFiltros() {
     var municipioSel = document.getElementById('emp-municipio-filter');
     var tagSel = document.getElementById('emp-tag-filter');
-    if (!municipioSel || !tagSel || !fonteAtual) return;
+    var cnaeSel = document.getElementById('emp-cnae-filter');
+    if (!municipioSel || !tagSel || !cnaeSel || !fonteAtual) return;
 
     var municipiosResp = await fetch('/api/empresarios/meta/' + fonteAtual + '/municipios');
     var municipios = municipiosResp.ok ? await municipiosResp.json() : [];
@@ -459,11 +463,17 @@ async function loadEmpresarioFiltros() {
     var tags = tagsResp.ok ? await tagsResp.json() : [];
     tagSel.innerHTML = '<option value="">Tag: todas</option>' +
         tags.map(function(t) { return '<option value="' + escHtml(t) + '">' + escHtml(t) + '</option>'; }).join('');
+
+    var cnaesResp = await fetch('/api/empresarios/meta/' + fonteAtual + '/cnaes');
+    var cnaes = cnaesResp.ok ? await cnaesResp.json() : [];
+    cnaeSel.innerHTML = '<option value="">Ramo: todos</option>' +
+        cnaes.map(function(c) { return '<option value="' + escHtml(c) + '">' + escHtml(cnaeLabel(c) || c) + '</option>'; }).join('');
 }
 
 function onEmpresarioFiltroChange() {
     empMunicipioFiltro = document.getElementById('emp-municipio-filter').value;
     empTagFiltro = document.getElementById('emp-tag-filter').value;
+    empCnaeFiltro = document.getElementById('emp-cnae-filter').value;
     reloadFonteAtual();
 }
 
@@ -485,6 +495,7 @@ async function loadEmpresariosColuna(status) {
     var url = '/api/empresarios/' + fonteAtual + '?status=' + status + '&limit=30&offset=' + state.offset;
     if (empMunicipioFiltro) url += '&municipio=' + encodeURIComponent(empMunicipioFiltro);
     if (empTagFiltro) url += '&tag=' + encodeURIComponent(empTagFiltro);
+    if (empCnaeFiltro) url += '&cnae=' + encodeURIComponent(empCnaeFiltro);
     var resp = await fetch(url);
     if (!resp.ok) return;
     var data = await resp.json();
