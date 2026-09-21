@@ -80,7 +80,11 @@
                 <p style="color:var(--muted); font-size:0.85rem; margin-bottom:0.8rem;">
                     Dados ao vivo do banco original (Receita Federal + Google Meu Negocio). Nada e migrado - mover um card aqui atualiza a fonte direto.
                 </p>
-                <div id="fonte-selector" class="nav" style="margin-bottom:1rem;"></div>
+                <div id="fonte-selector" class="nav" style="margin-bottom:0.6rem;"></div>
+                <div id="emp-filtros" style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+                    <select id="emp-municipio-filter" onchange="onEmpresarioFiltroChange()"><option value="">Cidade: todas</option></select>
+                    <select id="emp-tag-filter" onchange="onEmpresarioFiltroChange()"><option value="">Tag: todas</option></select>
+                </div>
                 <div id="empresarios-board" class="kanban-board"></div>
             </section>
 
@@ -112,6 +116,10 @@
 
     <div id="lead-modal" class="modal-overlay" onclick="if(event.target===this) closeLeadModal()">
         <div class="modal-box" id="lead-modal-box"></div>
+    </div>
+
+    <div id="empresario-modal" class="modal-overlay" onclick="if(event.target===this) closeEmpresarioModal()">
+        <div class="modal-box" id="empresario-modal-box"></div>
     </div>
 
     <script src="/static/js/app.js"></script>

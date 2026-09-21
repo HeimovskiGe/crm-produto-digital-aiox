@@ -407,7 +407,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 var fontesCache = [];
 var statusColumnsCache = [];
 var fonteAtual = null;
+var fonteAtualMeta = null;
 var empresariosPorStatus = {};
+var empMunicipioFiltro = '';
+var empTagFiltro = '';
 
 async function loadFontes() {
     var fontesResp = await fetch('/api/empresarios/meta/fontes');
@@ -431,9 +434,43 @@ async function loadFontes() {
 
 function selectFonte(fonte, btnEl) {
     fonteAtual = fonte;
+    fonteAtualMeta = fontesCache.find(function(f) { return f.value === fonte; }) || null;
     document.querySelectorAll('#fonte-selector .nav-btn').forEach(function(b) { b.classList.remove('active'); });
     if (btnEl) btnEl.classList.add('active');
+    empMunicipioFiltro = '';
+    empTagFiltro = '';
+    document.getElementById('emp-municipio-filter').value = '';
+    document.getElementById('emp-tag-filter').value = '';
+    loadEmpresarioFiltros();
     reloadFonteAtual();
+}
+
+async function loadEmpresarioFiltros() {
+    var municipioSel = document.getElementById('emp-municipio-filter');
+    var tagSel = document.getElementById('emp-tag-filter');
+    if (!municipioSel || !tagSel || !fonteAtual) return;
+
+    var municipiosResp = await fetch('/api/empresarios/meta/' + fonteAtual + '/municipios');
+    var municipios = municipiosResp.ok ? await municipiosResp.json() : [];
+    municipioSel.innerHTML = '<option value="">Cidade: todas</option>' +
+        municipios.map(function(m) { return '<option value="' + escHtml(m) + '">' + escHtml(m) + '</option>'; }).join('');
+
+    var tagsResp = await fetch('/api/empresarios/meta/' + fonteAtual + '/tags');
+    var tags = tagsResp.ok ? await tagsResp.json() : [];
+    tagSel.innerHTML = '<option value="">Tag: todas</option>' +
+        tags.map(function(t) { return '<option value="' + escHtml(t) + '">' + escHtml(t) + '</option>'; }).join('');
+}
+
+function onEmpresarioFiltroChange() {
+    empMunicipioFiltro = document.getElementById('emp-municipio-filter').value;
+    empTagFiltro = document.getElementById('emp-tag-filter').value;
+    reloadFonteAtual();
+}
+
+function escHtml(s) {
+    return String(s).replace(/[&<>"]/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
 }
 
 function reloadFonteAtual() {
@@ -445,7 +482,10 @@ function reloadFonteAtual() {
 
 async function loadEmpresariosColuna(status) {
     var state = empresariosPorStatus[status];
-    var resp = await fetch('/api/empresarios/' + fonteAtual + '?status=' + status + '&limit=30&offset=' + state.offset);
+    var url = '/api/empresarios/' + fonteAtual + '?status=' + status + '&limit=30&offset=' + state.offset;
+    if (empMunicipioFiltro) url += '&municipio=' + encodeURIComponent(empMunicipioFiltro);
+    if (empTagFiltro) url += '&tag=' + encodeURIComponent(empTagFiltro);
+    var resp = await fetch(url);
     if (!resp.ok) return;
     var data = await resp.json();
     state.items = state.items.concat(data.items);
@@ -524,6 +564,11 @@ function renderEmpresariosBoard() {
 
             card.appendChild(buildMoverStatusSelect(fonteAtual, item, statusCol.value));
 
+            card.addEventListener('click', function(e) {
+                if (e.target.closest('a,button,select')) return;
+                openEmpresarioModal(fonteAtual, item);
+            });
+
             cardsEl.appendChild(card);
         });
 
@@ -563,6 +608,146 @@ function buildMoverStatusSelect(fonte, item, statusAtual) {
         reloadFonteAtual();
     });
     return select;
+}
+
+/* ---- Popup de detalhes de Empresario ---- */
+
+function empresarioInfoRow(label, value) {
+    if (!value) return null;
+    var row = document.createElement('div');
+    var lbl = document.createElement('label');
+    lbl.style.display = 'block';
+    lbl.style.fontSize = '0.7rem';
+    lbl.style.color = 'var(--muted-foreground)';
+    lbl.textContent = label;
+    var val = document.createElement('div');
+    val.style.wordBreak = 'break-word';
+    val.textContent = value;
+    row.appendChild(lbl);
+    row.appendChild(val);
+    return row;
+}
+
+function openEmpresarioModal(fonte, item) {
+    var modal = document.getElementById('empresario-modal');
+    var box = document.getElementById('empresario-modal-box');
+    box.innerHTML = '';
+
+    var head = document.createElement('div');
+    head.style.display = 'flex';
+    head.style.justifyContent = 'space-between';
+    head.style.alignItems = 'flex-start';
+    head.style.marginBottom = '0.8rem';
+    var h2 = document.createElement('h2');
+    h2.style.margin = '0';
+    h2.style.fontSize = '1.05rem';
+    h2.textContent = item.nome_fantasia || item.razao_social || '(sem nome)';
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'btn-secondary';
+    closeBtn.textContent = '✕';
+    closeBtn.addEventListener('click', closeEmpresarioModal);
+    head.appendChild(h2);
+    head.appendChild(closeBtn);
+    box.appendChild(head);
+
+    var grid = document.createElement('div');
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = '1fr 1fr';
+    grid.style.gap = '0.6rem 1rem';
+    grid.style.fontSize = '0.85rem';
+    grid.style.marginBottom = '0.8rem';
+
+    var extraField = fonteAtualMeta && fonteAtualMeta.extra_field;
+    var rows = [
+        ['Razao social', item.razao_social],
+        ['CNPJ', item.cnpj],
+        ['CNAE', cnaeLabel(item.cnae) || item.cnae],
+        ['Telefone', item.telefone],
+        ['WhatsApp', item.whatsapp],
+        ['Email', item.email],
+        ['Bairro', item.bairro],
+        ['Municipio', item.municipio ? item.municipio + (item.uf ? '/' + item.uf : '') : ''],
+        ['CEP', item.cep],
+        [extraField ? (extraField === 'nicho' ? 'Nicho' : 'Tipo') : null, extraField ? item[extraField] : null],
+        ['Data de abertura', item.data_abertura],
+        ['Origem', item.origem],
+        ['Status', item.status],
+        ['Status email', item.email_status],
+        ['Tag IA', item.ia_tag],
+        ['Motivo (IA)', item.ia_reason],
+        ['Ultima resposta', item.last_reply],
+        ['Resp. em', item.last_reply_at ? new Date(item.last_reply_at).toLocaleString('pt-BR') : ''],
+        ['Email enviado em', item.email_sent_at ? new Date(item.email_sent_at).toLocaleString('pt-BR') : ''],
+        ['Criado em', item.created_at ? new Date(item.created_at).toLocaleString('pt-BR') : ''],
+        ['Atualizado em', item.updated_at ? new Date(item.updated_at).toLocaleString('pt-BR') : ''],
+    ];
+    rows.forEach(function(pair) {
+        if (!pair[0] || !pair[1]) return;
+        var row = empresarioInfoRow(pair[0], pair[1]);
+        if (row) grid.appendChild(row);
+    });
+    box.appendChild(grid);
+
+    var obsLabel = document.createElement('label');
+    obsLabel.style.display = 'block';
+    obsLabel.style.fontSize = '0.75rem';
+    obsLabel.style.color = 'var(--muted-foreground)';
+    obsLabel.style.marginBottom = '4px';
+    obsLabel.textContent = 'Observacoes';
+    box.appendChild(obsLabel);
+
+    var obsInput = document.createElement('textarea');
+    obsInput.id = 'emp-obs-input';
+    obsInput.rows = 4;
+    obsInput.style.width = '100%';
+    obsInput.style.background = 'var(--input)';
+    obsInput.style.border = '1px solid var(--border)';
+    obsInput.style.borderRadius = '10px';
+    obsInput.style.padding = '0.55rem 0.8rem';
+    obsInput.style.color = 'var(--foreground)';
+    obsInput.style.fontFamily = 'inherit';
+    obsInput.style.fontSize = '0.85rem';
+    obsInput.value = item.obs || '';
+    box.appendChild(obsInput);
+
+    var saveMsg = document.createElement('div');
+    saveMsg.style.fontSize = '0.75rem';
+    saveMsg.style.marginTop = '4px';
+    saveMsg.style.minHeight = '16px';
+
+    var saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'btn-primary';
+    saveBtn.style.width = '100%';
+    saveBtn.style.marginTop = '8px';
+    saveBtn.textContent = 'Salvar observacao';
+    saveBtn.addEventListener('click', async function() {
+        saveMsg.style.color = '';
+        saveMsg.textContent = 'salvando...';
+        try {
+            var resp = await fetch('/api/empresarios/' + fonte + '/' + item.id + '/obs', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ obs: obsInput.value })
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            item.obs = obsInput.value;
+            saveMsg.style.color = 'var(--primary)';
+            saveMsg.textContent = '✓ salvo';
+        } catch (e) {
+            saveMsg.style.color = 'var(--destructive)';
+            saveMsg.textContent = 'erro ao salvar';
+        }
+    });
+    box.appendChild(saveBtn);
+    box.appendChild(saveMsg);
+
+    modal.classList.add('open');
+}
+
+function closeEmpresarioModal() {
+    document.getElementById('empresario-modal').classList.remove('open');
 }
 
 function onDragStartEmp(e) {
