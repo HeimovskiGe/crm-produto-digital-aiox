@@ -508,6 +508,16 @@ async function loadEmpresariosColuna(status) {
 function renderEmpresariosBoard() {
     var board = document.getElementById('empresarios-board');
     if (!board) return;
+
+    // Guarda a posicao de rolagem (do board inteiro e de cada coluna) antes
+    // de recriar o DOM, pra nao voltar pro topo toda vez que um card muda.
+    var scrollLeft = board.scrollLeft;
+    var colScrollTops = {};
+    board.querySelectorAll('.kanban-col').forEach(function(col) {
+        var cardsEl = col.querySelector('.kanban-cards');
+        if (cardsEl) colScrollTops[col.dataset.stage] = cardsEl.scrollTop;
+    });
+
     board.innerHTML = '';
 
     statusColumnsCache.forEach(function(statusCol) {
@@ -533,6 +543,7 @@ function renderEmpresariosBoard() {
             card.draggable = true;
             card.dataset.empId = item.id;
             card.dataset.empFonte = item._fonte || fonteAtual;
+            card.dataset.empStatus = statusCol.value;
             card.addEventListener('dragstart', onDragStartEmp);
             card.addEventListener('dragend', onDragEnd);
 
@@ -614,6 +625,31 @@ function renderEmpresariosBoard() {
         col.appendChild(cardsEl);
         board.appendChild(col);
     });
+
+    // Restaura a rolagem depois de recriar o DOM.
+    board.scrollLeft = scrollLeft;
+    board.querySelectorAll('.kanban-col').forEach(function(col) {
+        var cardsEl = col.querySelector('.kanban-cards');
+        if (cardsEl && colScrollTops[col.dataset.stage] != null) {
+            cardsEl.scrollTop = colScrollTops[col.dataset.stage];
+        }
+    });
+}
+
+/* Move um item entre colunas so' em memoria (sem re-buscar do servidor),
+   pra nao perder o que ja foi carregado via "Carregar mais" nem a rolagem. */
+function moveItemLocally(itemId, oldStatus, newStatus) {
+    var oldState = empresariosPorStatus[oldStatus];
+    var newState = empresariosPorStatus[newStatus];
+    if (!oldState || !newState) return;
+    var idx = oldState.items.findIndex(function(i) { return i.id === itemId; });
+    if (idx === -1) return;
+    var item = oldState.items.splice(idx, 1)[0];
+    item.status = newStatus;
+    oldState.total = Math.max(0, oldState.total - 1);
+    newState.items.unshift(item);
+    newState.total += 1;
+    renderEmpresariosBoard();
 }
 
 function buildMoverStatusSelect(fonte, item, statusAtual) {
@@ -628,12 +664,13 @@ function buildMoverStatusSelect(fonte, item, statusAtual) {
     });
     select.addEventListener('click', function(ev) { ev.stopPropagation(); });
     select.addEventListener('change', async function() {
-        await fetch('/api/empresarios/' + fonte + '/' + item.id, {
+        var novoStatus = select.value;
+        var resp = await fetch('/api/empresarios/' + fonte + '/' + item.id, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: select.value })
+            body: JSON.stringify({ status: novoStatus })
         });
-        reloadFonteAtual();
+        if (resp.ok) moveItemLocally(item.id, statusAtual, novoStatus);
     });
     return select;
 }
@@ -783,6 +820,7 @@ function closeEmpresarioModal() {
 function onDragStartEmp(e) {
     e.dataTransfer.setData('text/plain', e.target.dataset.empId);
     e.dataTransfer.setData('application/x-fonte', e.target.dataset.empFonte || fonteAtual);
+    e.dataTransfer.setData('application/x-status', e.target.dataset.empStatus || '');
     e.target.classList.add('dragging');
 }
 
@@ -791,13 +829,15 @@ async function onDropEmp(e) {
     e.currentTarget.classList.remove('dragover');
     var empId = e.dataTransfer.getData('text/plain');
     var empFonte = e.dataTransfer.getData('application/x-fonte') || fonteAtual;
+    var oldStatus = e.dataTransfer.getData('application/x-status');
     var newStatus = e.currentTarget.dataset.stage;
-    await fetch('/api/empresarios/' + empFonte + '/' + empId, {
+    if (!empId || oldStatus === newStatus) return;
+    var resp = await fetch('/api/empresarios/' + empFonte + '/' + empId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
     });
-    reloadFonteAtual();
+    if (resp.ok && oldStatus) moveItemLocally(empId, oldStatus, newStatus);
 }
 
 document.addEventListener('DOMContentLoaded', loadFontes);
@@ -910,7 +950,7 @@ async function prospectarEmpresario(fonte, item, btnEl) {
     });
     if (resp.ok) {
         btnEl.textContent = '✓ Em Leads';
-        reloadFonteAtual();
+        moveItemLocally(item.id, item.status, 'contatado');
         loadLeads();
     } else {
         btnEl.disabled = false;
