@@ -532,12 +532,29 @@ function renderEmpresariosBoard() {
             card.className = 'kanban-card';
             card.draggable = true;
             card.dataset.empId = item.id;
+            card.dataset.empFonte = item._fonte || fonteAtual;
             card.addEventListener('dragstart', onDragStartEmp);
             card.addEventListener('dragend', onDragEnd);
+
+            var itemFonte = item._fonte || fonteAtual;
 
             var nome = document.createElement('strong');
             nome.textContent = item.razao_social || item.nome_fantasia || '(sem nome)';
             card.appendChild(nome);
+
+            if (item._fonte_label) {
+                var fonteTag = document.createElement('span');
+                fonteTag.className = 'tag';
+                fonteTag.style.display = 'inline-block';
+                fonteTag.style.marginLeft = '6px';
+                fonteTag.style.fontSize = '0.65rem';
+                fonteTag.style.padding = '1px 6px';
+                fonteTag.style.borderRadius = '8px';
+                fonteTag.style.background = 'var(--accent, #2a3140)';
+                fonteTag.style.color = 'var(--muted-foreground)';
+                fonteTag.textContent = item._fonte_label;
+                card.appendChild(fonteTag);
+            }
 
             var meta = document.createElement('small');
             meta.className = 'card-meta';
@@ -569,15 +586,15 @@ function renderEmpresariosBoard() {
             prospectarBtn.style.padding = '0.35rem';
             prospectarBtn.textContent = '+ Prospectar';
             prospectarBtn.addEventListener('click', function() {
-                prospectarEmpresario(fonteAtual, item, prospectarBtn);
+                prospectarEmpresario(itemFonte, item, prospectarBtn);
             });
             card.appendChild(prospectarBtn);
 
-            card.appendChild(buildMoverStatusSelect(fonteAtual, item, statusCol.value));
+            card.appendChild(buildMoverStatusSelect(itemFonte, item, statusCol.value));
 
             card.addEventListener('click', function(e) {
                 if (e.target.closest('a,button,select')) return;
-                openEmpresarioModal(fonteAtual, item);
+                openEmpresarioModal(itemFonte, item);
             });
 
             cardsEl.appendChild(card);
@@ -669,8 +686,10 @@ function openEmpresarioModal(fonte, item) {
     grid.style.fontSize = '0.85rem';
     grid.style.marginBottom = '0.8rem';
 
-    var extraField = fonteAtualMeta && fonteAtualMeta.extra_field;
+    var itemFonteMeta = fontesCache.find(function(f) { return f.value === fonte; });
+    var extraField = itemFonteMeta && itemFonteMeta.extra_field;
     var rows = [
+        ['Frente', item._fonte_label],
         ['Razao social', item.razao_social],
         ['CNPJ', item.cnpj],
         ['CNAE', cnaeLabel(item.cnae) || item.cnae],
@@ -763,6 +782,7 @@ function closeEmpresarioModal() {
 
 function onDragStartEmp(e) {
     e.dataTransfer.setData('text/plain', e.target.dataset.empId);
+    e.dataTransfer.setData('application/x-fonte', e.target.dataset.empFonte || fonteAtual);
     e.target.classList.add('dragging');
 }
 
@@ -770,8 +790,9 @@ async function onDropEmp(e) {
     e.preventDefault();
     e.currentTarget.classList.remove('dragover');
     var empId = e.dataTransfer.getData('text/plain');
+    var empFonte = e.dataTransfer.getData('application/x-fonte') || fonteAtual;
     var newStatus = e.currentTarget.dataset.stage;
-    await fetch('/api/empresarios/' + fonteAtual + '/' + empId, {
+    await fetch('/api/empresarios/' + empFonte + '/' + empId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })

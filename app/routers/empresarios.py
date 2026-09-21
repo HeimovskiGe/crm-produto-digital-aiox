@@ -5,6 +5,8 @@ server-side). Cada fonte usa o proprio vocabulario de status que ja existe
 la (novo/contatado/respondeu/negociando/fechado/perdido) - nao usa
 etapa_processo nem pipeline_stage deste CRM.
 """
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,6 +38,7 @@ STATUS_COLUMNS = [
 ]
 
 DEFAULT_LIMIT = 30
+TODAS = "todas"
 
 
 class StatusUpdate(BaseModel):
@@ -74,7 +77,11 @@ def _select_fields_for(fonte: str) -> str:
 
 @router.get("/meta/fontes")
 async def list_fontes():
-    return [{"value": k, "label": v["label"], "extra_field": v.get("extra_field")} for k, v in FONTES.items()]
+    # "Todas as Frentes" no fim: a fonte inicial ao abrir a aba continua
+    # sendo uma unica tabela (leve). O combinado e' pesado (5x as chamadas
+    # por status) e e' escolha explicita do usuario.
+    fontes = [{"value": k, "label": v["label"], "extra_field": v.get("extra_field")} for k, v in FONTES.items()]
+    return fontes + [{"value": TODAS, "label": "🌐 Todas as Frentes", "extra_field": None}]
 
 
 @router.get("/meta/status")
@@ -82,20 +89,36 @@ async def list_status_columns():
     return STATUS_COLUMNS
 
 
+async def _distinct_all_fontes(column: str) -> list[str]:
+    results = await asyncio.gather(
+        *(pamgeh_client.list_distinct(v["table"], column) for v in FONTES.values())
+    )
+    merged: set[str] = set()
+    for values in results:
+        merged.update(values)
+    return sorted(merged)
+
+
 @router.get("/meta/{fonte}/municipios")
 async def list_municipios(fonte: str):
+    if fonte == TODAS:
+        return await _distinct_all_fontes("municipio")
     table = _table_or_404(fonte)
     return await pamgeh_client.list_distinct(table, "municipio")
 
 
 @router.get("/meta/{fonte}/tags")
 async def list_tags(fonte: str):
+    if fonte == TODAS:
+        return await _distinct_all_fontes("ia_tag")
     table = _table_or_404(fonte)
     return await pamgeh_client.list_distinct(table, "ia_tag")
 
 
 @router.get("/meta/{fonte}/cnaes")
 async def list_cnaes(fonte: str):
+    if fonte == TODAS:
+        return await _distinct_all_fontes("cnae")
     table = _table_or_404(fonte)
     return await pamgeh_client.list_distinct(table, "cnae")
 
@@ -110,6 +133,28 @@ async def list_por_status(
     tag: str | None = None,
     cnae: str | None = None,
 ):
+    if fonte == TODAS:
+        results = await asyncio.gather(
+            *(
+                pamgeh_client.list_by_status(
+                    v["table"], status, limit, offset,
+                    municipio=municipio, tag=tag, cnae=cnae,
+                    select_fields=_select_fields_for(k),
+                )
+                for k, v in FONTES.items()
+            )
+        )
+        items: list[dict] = []
+        total = 0
+        for (fonte_key, fonte_meta), (fonte_items, fonte_total) in zip(FONTES.items(), results):
+            for item in fonte_items:
+                item["_fonte"] = fonte_key
+                item["_fonte_label"] = fonte_meta["label"]
+            items.extend(fonte_items)
+            total += fonte_total
+        items.sort(key=lambda i: i.get("created_at") or "", reverse=True)
+        return {"items": items, "total": total}
+
     table = _table_or_404(fonte)
     items, total = await pamgeh_client.list_by_status(
         table, status, limit, offset,
