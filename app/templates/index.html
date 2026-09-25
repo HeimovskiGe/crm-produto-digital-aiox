@@ -91,6 +91,10 @@
                     <select id="emp-tag-filter" onchange="onEmpresarioFiltroChange()"><option value="">Tag: todas</option></select>
                     <select id="emp-cnae-filter" onchange="onEmpresarioFiltroChange()"><option value="">Ramo: todos</option></select>
                 </div>
+                <div class="view-toggle">
+                    <button class="nav-btn active" id="view-emp-status-btn" onclick="setEmpresariosView('status')">Por Status</button>
+                    <button class="nav-btn" id="view-emp-dia-btn" onclick="setEmpresariosView('dia')">Por Dia</button>
+                </div>
                 <div id="empresarios-board" class="kanban-board"></div>
             </section>
 

@@ -366,16 +366,29 @@ function setLeadsView(view) {
     document.getElementById('view-etapa-btn').classList.toggle('active', view === 'etapa');
     document.getElementById('view-dia-btn').classList.toggle('active', view === 'dia');
     if (view === 'dia') {
-        loadAtividadesPorDia();
+        loadAtividadesPorDia('kanban-board');
     } else {
         renderKanban();
     }
 }
 
-async function loadAtividadesPorDia() {
+var empresariosView = 'status';
+
+function setEmpresariosView(view) {
+    empresariosView = view;
+    document.getElementById('view-emp-status-btn').classList.toggle('active', view === 'status');
+    document.getElementById('view-emp-dia-btn').classList.toggle('active', view === 'dia');
+    if (view === 'dia') {
+        loadAtividadesPorDia('empresarios-board');
+    } else {
+        renderEmpresariosBoard();
+    }
+}
+
+async function loadAtividadesPorDia(containerId) {
     var resp = await fetch('/api/leads/atividades/por-dia?dias=' + DIAS_VISAO_DIA);
     atividadesPorDiaCache = resp.ok ? await resp.json() : [];
-    renderAtividadesPorDia();
+    renderAtividadesPorDia(containerId);
 }
 
 function chaveDiaLocal(isoString) {
@@ -396,8 +409,8 @@ function labelDiaLocal(chave) {
     return dataFmt;
 }
 
-function renderAtividadesPorDia() {
-    var board = document.getElementById('kanban-board');
+function renderAtividadesPorDia(containerId) {
+    var board = document.getElementById(containerId || 'kanban-board');
     if (!board) return;
     board.innerHTML = '';
 
@@ -433,7 +446,11 @@ function renderAtividadesPorDia() {
         atividadesDoDia.forEach(function(at) {
             var card = document.createElement('div');
             card.className = 'kanban-card';
-            card.addEventListener('click', function() { openLeadModal(at.lead_id); });
+            if (at.lead_id) {
+                card.addEventListener('click', function() { openLeadModal(at.lead_id); });
+            } else {
+                card.style.cursor = 'default';
+            }
 
             var nome = document.createElement('strong');
             nome.textContent = at.lead_nome;
@@ -641,6 +658,10 @@ async function loadEmpresariosColuna(status) {
 }
 
 function renderEmpresariosBoard() {
+    // Se o usuario esta na visao "Por Dia", um load de coluna terminando em
+    // segundo plano nao pode voltar o board pra "Por Status" na cara dele.
+    if (empresariosView === 'dia') return;
+
     var board = document.getElementById('empresarios-board');
     if (!board) return;
 
