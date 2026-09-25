@@ -6,13 +6,16 @@ la (novo/contatado/respondeu/negociando/fechado/perdido) - nao usa
 etapa_processo nem pipeline_stage deste CRM.
 """
 import asyncio
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.atividade import AtividadeProspeccao, ObjetivoContato
 from app.models.lead import EtapaProcesso, Lead
+from app.schemas.atividade import AtividadeEmpresarioCreate, AtividadeOut
 from app.services.pamgeh_client import SELECT_FIELDS, pamgeh_client
 
 router = APIRouter(prefix="/api/empresarios", tags=["empresarios"])
@@ -176,6 +179,28 @@ async def update_obs(fonte: str, record_id: str, payload: ObsUpdate):
     table = _table_or_404(fonte)
     await pamgeh_client.update_fields(table, record_id, {"obs": payload.obs})
     return {"ok": True}
+
+
+@router.post("/atividades", response_model=AtividadeOut, status_code=201)
+async def registrar_atividade_empresario(
+    payload: AtividadeEmpresarioCreate, db: AsyncSession = Depends(get_db)
+):
+    """Registra 1 toque (ex: clique no WhatsApp) num empresario cru, sem
+    precisar promove-lo a Lead primeiro - e o que faz a visao 'Por Dia'
+    contar tambem a prospeccao fria feita direto no funil de Empresarios."""
+    _fonte_or_404(payload.fonte)
+    atividade = AtividadeProspeccao(
+        canal=payload.canal,
+        objetivo_contato=ObjetivoContato.MARCAR_REUNIAO,
+        data_hora=datetime.now(timezone.utc),
+        empresario_fonte=payload.fonte,
+        empresario_record_id=payload.record_id,
+        empresario_nome=payload.nome,
+    )
+    db.add(atividade)
+    await db.flush()
+    await db.refresh(atividade)
+    return atividade
 
 
 @router.post("/{fonte}/{record_id}/prospectar")

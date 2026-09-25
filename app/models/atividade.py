@@ -6,7 +6,7 @@ docs/architecture/prospeccao-fanatica-schema.md#atividadeprospeccao.
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -65,12 +65,24 @@ canal_enum = Enum(Canal, name="canal_enum", values_callable=lambda e: [x.value f
 
 
 class AtividadeProspeccao(Base):
+    """Uma linha = um toque de prospeccao (ligacao, whatsapp etc), num Lead
+    OU num empresario cru da base pam-geh (que nao tem linha propria neste
+    banco - so guardamos aqui de onde veio, pra view 'Por Dia' contar as
+    duas pontas do funil, nao so quem ja foi promovido a Lead)."""
+
     __tablename__ = "atividades_prospeccao"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    lead_id: Mapped[int] = mapped_column(
-        ForeignKey("leads.id", ondelete="CASCADE"), nullable=False, index=True
+    lead_id: Mapped[int | None] = mapped_column(
+        ForeignKey("leads.id", ondelete="CASCADE"), nullable=True, index=True
     )
+
+    # Preenchidos quando a atividade e sobre um empresario ainda nao
+    # promovido a Lead (nome/fonte snapshot no momento do toque, ja que o
+    # registro em si mora na base pam-geh, fora deste banco).
+    empresario_fonte: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    empresario_record_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    empresario_nome: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     canal: Mapped[Canal] = mapped_column(canal_enum, nullable=False)
     canal_anterior: Mapped[Canal | None] = mapped_column(canal_enum, nullable=True)

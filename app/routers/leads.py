@@ -79,20 +79,30 @@ async def metrics_resumo(db: AsyncSession = Depends(get_db)):
 
 @router.get("/atividades/por-dia", response_model=list[AtividadeComLeadOut])
 async def list_atividades_por_dia(dias: int = 14, db: AsyncSession = Depends(get_db)):
-    """Atividades dos ultimos `dias` dias, com nome/empresa do lead embutido -
+    """Atividades dos ultimos `dias` dias, com nome/empresa ja resolvido -
     fonte pra visao 'Por Dia' do kanban (contagem real de ligacao/prospeccao
-    por dia, em vez de tudo misturado numa coluna so de etapa)."""
+    por dia, em vez de tudo misturado numa coluna so de etapa). Cobre as duas
+    pontas do funil: atividade num Lead de verdade (join) OU num empresario
+    cru ainda nao promovido (snapshot salvo na propria linha da atividade)."""
+    from app.routers.empresarios import FONTES  # import local: evita ciclo no import do modulo
+
     desde = date.today() - timedelta(days=dias - 1)
     result = await db.execute(
-        select(AtividadeProspeccao, Lead.nome, Lead.empresa)
-        .join(Lead, Lead.id == AtividadeProspeccao.lead_id)
+        select(
+            AtividadeProspeccao,
+            func.coalesce(Lead.nome, AtividadeProspeccao.empresario_nome).label("nome"),
+            Lead.empresa,
+        )
+        .outerjoin(Lead, Lead.id == AtividadeProspeccao.lead_id)
         .where(func.date(AtividadeProspeccao.data_hora) >= desde)
         .order_by(AtividadeProspeccao.data_hora.desc())
     )
     atividades = []
     for atividade, nome, empresa in result.all():
+        if empresa is None and atividade.empresario_fonte:
+            empresa = FONTES.get(atividade.empresario_fonte, {}).get("label", atividade.empresario_fonte)
         base = AtividadeOut.model_validate(atividade).model_dump()
-        atividades.append(AtividadeComLeadOut(**base, lead_nome=nome, lead_empresa=empresa))
+        atividades.append(AtividadeComLeadOut(**base, lead_nome=nome or "(sem nome)", lead_empresa=empresa))
     return atividades
 
 

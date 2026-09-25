@@ -720,6 +720,19 @@ function renderEmpresariosBoard() {
                 waLink.style.textAlign = 'center';
                 waLink.style.textDecoration = 'none';
                 waLink.textContent = '💬 WhatsApp';
+                waLink.addEventListener('click', function() {
+                    // Nao bloqueia a abertura do WhatsApp - so registra o toque
+                    // pra contar na visao "Por Dia" (empresario cru ainda nao e Lead).
+                    fetch('/api/empresarios/atividades', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fonte: itemFonte,
+                            record_id: String(item.id),
+                            nome: nomeParaMsg || '(sem nome)'
+                        })
+                    }).catch(function(e) { console.log('Falha ao registrar atividade', e); });
+                });
                 card.appendChild(waLink);
             }
 

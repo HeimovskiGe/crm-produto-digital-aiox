@@ -21,12 +21,26 @@ class AtividadeOut(AtividadeCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    lead_id: int
+    lead_id: int | None = None
+    empresario_fonte: str | None = None
+    empresario_record_id: str | None = None
+    empresario_nome: str | None = None
     created_at: datetime
 
 
 class AtividadeComLeadOut(AtividadeOut):
-    """AtividadeOut + dados do lead, pra visao 'por dia' (sem repetir consulta por card)."""
+    """AtividadeOut + nome/empresa pra mostrar o card, seja de Lead ou de
+    empresario cru (visao 'por dia' junta as duas pontas do funil)."""
 
     lead_nome: str
     lead_empresa: str | None = None
+
+
+class AtividadeEmpresarioCreate(BaseModel):
+    """Log de toque num empresario ainda nao promovido a Lead - 1 clique,
+    sem formulario (o fluxo de prospeccao fria precisa ser rapido)."""
+
+    fonte: str
+    record_id: str
+    nome: str
+    canal: Canal = Canal.MENSAGEM_TEXTO
