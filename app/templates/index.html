@@ -71,6 +71,11 @@
                     <button type="submit" class="btn-primary">Salvar</button>
                     <button type="button" class="btn-secondary" onclick="toggleNewLeadForm(false)">Cancelar</button>
                 </form>
+
+                <div class="view-toggle">
+                    <button class="nav-btn active" id="view-etapa-btn" onclick="setLeadsView('etapa')">Por Etapa</button>
+                    <button class="nav-btn" id="view-dia-btn" onclick="setLeadsView('dia')">Por Dia</button>
+                </div>
                 <div id="kanban-board" class="kanban-board"></div>
             </section>
 

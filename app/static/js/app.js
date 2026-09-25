@@ -340,6 +340,131 @@ function toggleAtividadeForm(leadId, card) {
     card.appendChild(form);
 }
 
+/* ---- Visao "Por Dia" do kanban (atividade de prospeccao real por dia,
+   pra nao ficar tudo misturado numa coluna so de etapa) ---- */
+
+var leadsView = 'etapa';
+var atividadesPorDiaCache = [];
+var DIAS_VISAO_DIA = 7;
+
+function canalLabelPorDia(value) {
+    var found = CANAL_OPTIONS.find(function(o) { return o[0] === value; });
+    return found ? found[1] : value;
+}
+
+function resultadoLabelPorDia(value) {
+    if (!value) return null;
+    var RESULTADO_LABELS = {
+        resposta_reflexo: 'Resposta reflexo', dispensa: 'Dispensa', objecao: 'Objecao',
+        reuniao_marcada: 'Reuniao marcada', venda_fechada: 'Venda fechada', sem_resposta: 'Sem resposta'
+    };
+    return RESULTADO_LABELS[value] || value;
+}
+
+function setLeadsView(view) {
+    leadsView = view;
+    document.getElementById('view-etapa-btn').classList.toggle('active', view === 'etapa');
+    document.getElementById('view-dia-btn').classList.toggle('active', view === 'dia');
+    if (view === 'dia') {
+        loadAtividadesPorDia();
+    } else {
+        renderKanban();
+    }
+}
+
+async function loadAtividadesPorDia() {
+    var resp = await fetch('/api/leads/atividades/por-dia?dias=' + DIAS_VISAO_DIA);
+    atividadesPorDiaCache = resp.ok ? await resp.json() : [];
+    renderAtividadesPorDia();
+}
+
+function chaveDiaLocal(isoString) {
+    var d = new Date(isoString);
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+
+function labelDiaLocal(chave) {
+    var hojeChave = chaveDiaLocal(new Date().toISOString());
+    var ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+    var ontemChave = chaveDiaLocal(ontem.toISOString());
+
+    var partes = chave.split('-');
+    var dataFmt = partes[2] + '/' + partes[1];
+    if (chave === hojeChave) return 'Hoje · ' + dataFmt;
+    if (chave === ontemChave) return 'Ontem · ' + dataFmt;
+    return dataFmt;
+}
+
+function renderAtividadesPorDia() {
+    var board = document.getElementById('kanban-board');
+    if (!board) return;
+    board.innerHTML = '';
+
+    // Colunas fixas pros ultimos N dias (aparece coluna vazia se nao ligou
+    // naquele dia - e justamente o que precisa ficar visivel).
+    var colunas = [];
+    for (var i = 0; i < DIAS_VISAO_DIA; i++) {
+        var d = new Date();
+        d.setDate(d.getDate() - i);
+        colunas.push(chaveDiaLocal(d.toISOString()));
+    }
+
+    var porDia = {};
+    colunas.forEach(function(chave) { porDia[chave] = []; });
+    atividadesPorDiaCache.forEach(function(at) {
+        var chave = chaveDiaLocal(at.data_hora);
+        if (porDia[chave]) porDia[chave].push(at);
+    });
+
+    colunas.forEach(function(chave) {
+        var atividadesDoDia = porDia[chave];
+
+        var col = document.createElement('div');
+        col.className = 'kanban-col';
+
+        var header = document.createElement('h3');
+        header.textContent = labelDiaLocal(chave) + ' (' + atividadesDoDia.length + ')';
+        col.appendChild(header);
+
+        var cardsEl = document.createElement('div');
+        cardsEl.className = 'kanban-cards';
+
+        atividadesDoDia.forEach(function(at) {
+            var card = document.createElement('div');
+            card.className = 'kanban-card';
+            card.addEventListener('click', function() { openLeadModal(at.lead_id); });
+
+            var nome = document.createElement('strong');
+            nome.textContent = at.lead_nome;
+            card.appendChild(nome);
+
+            if (at.lead_empresa) {
+                var empresa = document.createElement('small');
+                empresa.textContent = at.lead_empresa;
+                card.appendChild(document.createElement('br'));
+                card.appendChild(empresa);
+            }
+
+            var hora = new Date(at.data_hora);
+            var metaPartes = [pad2(hora.getHours()) + ':' + pad2(hora.getMinutes()), canalLabelPorDia(at.canal)];
+            var resultadoTxt = resultadoLabelPorDia(at.resultado);
+            if (resultadoTxt) metaPartes.push(resultadoTxt);
+
+            var meta = document.createElement('small');
+            meta.className = 'card-meta';
+            meta.textContent = metaPartes.join(' · ');
+            card.appendChild(document.createElement('br'));
+            card.appendChild(meta);
+
+            cardsEl.appendChild(card);
+        });
+
+        col.appendChild(cardsEl);
+        board.appendChild(col);
+    });
+}
+
 function onDragStart(e) {
     e.dataTransfer.setData('text/plain', e.target.dataset.leadId);
     e.target.classList.add('dragging');
@@ -403,6 +528,16 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 /* ---- Empresarios (bases pam-geh - sem migrar, direto na fonte) ---- */
+
+// Mensagem-padrao do botao WhatsApp: segue a ligacao que ja foi feita (fluxo
+// e ligar primeiro, e so depois abrir o WhatsApp com isso pre-escrito).
+function mensagemPosLigacao(nome) {
+    return 'Oi ' + nome + ', tentei te ligar agora. Eu e minha esposa construímos um negócio que ajuda ' +
+        'empresário a ganhar mais venda, tempo e processo.\n' +
+        ' Você já construiu o que construiu até aqui. A pergunta que eu queria te fazer é só uma: ' +
+        'já chegou a hora de dar o próximo passo, ou você ainda tá satisfeito onde tá?\n' +
+        'Posso te ligar, 10 minutos suficiente pra explicar?';
+}
 
 var fontesCache = [];
 var statusColumnsCache = [];
@@ -576,7 +711,8 @@ function renderEmpresariosBoard() {
 
             if (item.whatsapp) {
                 var waLink = document.createElement('a');
-                waLink.href = 'https://wa.me/' + item.whatsapp;
+                var nomeParaMsg = (item.razao_social || item.nome_fantasia || '').replace(/^\d{2}\.\d{3}\.\d{3}\s+/, '');
+                waLink.href = 'https://wa.me/' + item.whatsapp + '?text=' + encodeURIComponent(mensagemPosLigacao(nomeParaMsg));
                 waLink.target = '_blank';
                 waLink.rel = 'noopener';
                 waLink.className = 'btn-log-atividade';

@@ -1,4 +1,6 @@
 """Endpoints de Leads - funil de prospeccao (Piramide da Prospeccao)."""
+from datetime import date, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.atividade import AtividadeProspeccao
 from app.models.lead import EtapaProcesso, Lead, PipelineStage
-from app.schemas.atividade import AtividadeCreate, AtividadeOut
+from app.schemas.atividade import AtividadeComLeadOut, AtividadeCreate, AtividadeOut
 from app.schemas.lead import LeadCreate, LeadOut, LeadUpdate
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
@@ -73,6 +75,25 @@ async def metrics_resumo(db: AsyncSession = Depends(get_db)):
         "desqualificado": desqualificado,
         "taxa_conversao": round((fechado_ganho / fechados_total) * 100, 1) if fechados_total else 0.0,
     }
+
+
+@router.get("/atividades/por-dia", response_model=list[AtividadeComLeadOut])
+async def list_atividades_por_dia(dias: int = 14, db: AsyncSession = Depends(get_db)):
+    """Atividades dos ultimos `dias` dias, com nome/empresa do lead embutido -
+    fonte pra visao 'Por Dia' do kanban (contagem real de ligacao/prospeccao
+    por dia, em vez de tudo misturado numa coluna so de etapa)."""
+    desde = date.today() - timedelta(days=dias - 1)
+    result = await db.execute(
+        select(AtividadeProspeccao, Lead.nome, Lead.empresa)
+        .join(Lead, Lead.id == AtividadeProspeccao.lead_id)
+        .where(func.date(AtividadeProspeccao.data_hora) >= desde)
+        .order_by(AtividadeProspeccao.data_hora.desc())
+    )
+    atividades = []
+    for atividade, nome, empresa in result.all():
+        base = AtividadeOut.model_validate(atividade).model_dump()
+        atividades.append(AtividadeComLeadOut(**base, lead_nome=nome, lead_empresa=empresa))
+    return atividades
 
 
 @router.get("", response_model=list[LeadOut])

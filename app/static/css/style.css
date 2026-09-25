@@ -52,6 +52,12 @@ body {
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
 }
+.view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0 0.8rem;
+    flex-wrap: wrap;
+}
 .nav-btn {
     padding: 0.6rem 1.3rem;
     background: var(--card);

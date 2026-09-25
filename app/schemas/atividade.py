@@ -23,3 +23,10 @@ class AtividadeOut(AtividadeCreate):
     id: int
     lead_id: int
     created_at: datetime
+
+
+class AtividadeComLeadOut(AtividadeOut):
+    """AtividadeOut + dados do lead, pra visao 'por dia' (sem repetir consulta por card)."""
+
+    lead_nome: str
+    lead_empresa: str | None = None
